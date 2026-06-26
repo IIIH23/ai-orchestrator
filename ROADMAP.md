@@ -65,3 +65,4 @@ Pulse of Earth is a research and software project for collecting, processing, an
 - Success criteria: Partner profile is documented and referenced by planning workflows.
 - Estimated effort: S
 - Next actionable task: Create a profile template with role, preferences, responsibilities, and escalation notes.
+- Progress: Partner profile template created at docs/PARTNER_PROFILE_TEMPLATE.md
