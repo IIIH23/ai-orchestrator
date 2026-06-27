@@ -92,3 +92,4 @@ Pulse of Earth is a research and software project for collecting, processing, an
 ## Recent updates (autopilot)
 
 - 2026-06-27T06:39:54Z: Wired tools/inventory.py into the CI smoke workflow so the inventory script is exercised in CI; local smoke tests passed.
+- 2026-06-27T08:43:43Z: Added a focused pytest (tests/test_inventory_pytest.py) to exercise tools/inventory.collect_files and render_inventory, created with Codex (sandbox: workspace-write). Verification could not be completed here because `pytest` is not installed in this environment; execution and commit are deferred until pytest is available.

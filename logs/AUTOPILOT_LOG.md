@@ -42,37 +42,29 @@
 - Checks performed: enumerated files (depth=4), validated presence of CI skeleton and smoke test, checked key dependency/manifest files (none found).
 - Outcome: repository `.git` is writable in this environment; smoke test exists but not yet executed in this run (next step). Preparing to run smoke tests and create a local commit if tests pass.
 
-## 2026-06-26T23:46:55Z
-
-- Action: Autopilot cycle 6  ran smoke tests (bash tests/smoke_test.sh) in /home/hermes/projects/pulse-of-earth.
-- Result: Smoke tests PASSED (0 Python files compiled; required files present).
-- Action: Updated ROADMAP.md, AUTOPILOT_STATE.md, and this log; created a local git commit recording these changes.
-- .autopilot.lock: not present at commit time (no removal needed) or removed earlier in the cycle.
-- Next: Identify the first logic source to port and record its expected inputs and outputs (follow ROADMAP step: Port Logic).
-
 ## 2026-06-27T01:50:59Z
 
-- Action: Autopilot cycle 7  selected the first logic source to port: the audit/file-inventory generator (audit/FILE_INVENTORY.md).
+- Action: Autopilot cycle 7 — selected the first logic source to port: the audit/file-inventory generator (audit/FILE_INVENTORY.md).
 - Action: Wrote specification at docs/PORTING_FIRST_SOURCE.md describing inputs, outputs, and the minimal CLI surface for a tools/inventory.py implementation.
 - Action: Updated ROADMAP.md and AUTOPILOT_STATE.md to record the selection and next steps.
-- Tests: Ran smoke tests (bash tests/smoke_test.sh)  PASSED.
+- Tests: Ran smoke tests (bash tests/smoke_test.sh) — PASSED.
 - Commit: created in this cycle (see local commit below).
 - Next: Implement tools/inventory.py in a follow-up cycle and add a focused test that runs it on a small fixture.
 
 ## 2026-06-27T03:55:33+00:00
 
-- Action: Autopilot cycle 7 (follow-up)  implemented tools/inventory.py and tests/test_inventory.sh per docs/PORTING_FIRST_SOURCE.md.
+- Action: Autopilot cycle 7 (follow-up) — implemented tools/inventory.py and tests/test_inventory.sh per docs/PORTING_FIRST_SOURCE.md.
 - Files created in working tree: tools/inventory.py, tests/test_inventory.sh.
-- Tests executed: tests/test_inventory.sh (fixture-based inventory test) and tests/smoke_test.sh  both PASSED.
+- Tests executed: tests/test_inventory.sh (fixture-based inventory test) and tests/smoke_test.sh — both PASSED.
 - Next: Wire tools/inventory.py into .github/workflows/smoke.yml for CI execution and add further focused tests.
 - Commit: pending (local commit will be created to record these changes).
 
 ## 2026-06-27T04:39:08Z
 
-- Action: Autopilot cycle 7  added SKILLS_AND_DEPENDENCIES_PLAN.md and docs/PRODUCTION_READINESS.md; updated ROADMAP.md with production automation roadmap.
+- Action: Autopilot cycle 7 — added SKILLS_AND_DEPENDENCIES_PLAN.md and docs/PRODUCTION_READINESS.md; updated ROADMAP.md with production automation roadmap.
 - Files changed: SKILLS_AND_DEPENDENCIES_PLAN.md, docs/PRODUCTION_READINESS.md, ROADMAP.md
 - Commit: 13a7e7a47da3011d2c34faafeac603d3f6cbf588
-- Tests: smoke_test.sh and tests/test_inventory.sh  PASSED
+- Tests: smoke_test.sh and tests/test_inventory.sh — PASSED
 - Next: Wire tools/inventory.py into CI and add dependency locking in a follow-up cycle.
 
 ## 2026-06-27T06:39:54Z
@@ -82,3 +74,13 @@
 - Files changed: .github/workflows/smoke.yml, audit/FILE_INVENTORY.md, AUTOPILOT_STATE.md, ROADMAP.md (if updated).
 - Next: Add focused CI tests and dependency locking in a follow-up cycle.
 - Commit: will be created locally in this cycle.
+
+## 2026-06-27T08:43:43Z
+
+- Action: Autopilot cycle 8 — added a focused pytest at tests/test_inventory_pytest.py to exercise tools/inventory.collect_files and render_inventory.
+- Action detail: Created tests/test_inventory_pytest.py using Codex (sandbox: workspace-write).
+- Verification: Attempted to run the new pytest but `pytest` is not installed in this environment; verification could not be completed.
+- Files created (uncommitted): tests/test_inventory_pytest.py
+- Blocker: `pytest` missing in runtime environment. Tests and local commit are deferred until pytest is available.
+- Next: Run tests in an environment with pytest installed; if tests pass, create a local commit and append the commit hash to this log entry.
+
