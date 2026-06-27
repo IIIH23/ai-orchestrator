@@ -7,9 +7,9 @@ Pulse of Earth is a research and software project for collecting, processing, an
 - Objectives: Review repository structure, current assets, assumptions, and missing project controls.
 - Success criteria: Inventory exists, gaps are ranked, and immediate risks are visible.
 - Estimated effort: S
-- Progress: Created audit/FILE_INVENTORY.md (commit 6ec83a1). Latest audit executed by night-shift autopilot; see logs/AUTOPILOT_LOG.md for details.
-- Next actionable task: Create minimal smoke tests and CI workflow skeleton to validate repository invariants.
-- Recent update: Minimal smoke test and CI workflow skeleton files were created locally (tests/smoke_test.sh, .github/workflows/smoke.yml). Local smoke test passed ("Smoke test passed: 2 required files found; 0 Python file(s) compiled."). Commit was created locally in this cycle (autopilot cycle 6).
+- Status: ✅ done
+- Progress: Created audit/FILE_INVENTORY.md (commit 6ec83a1). Smoke tests and CI workflow skeleton added (commits 51f5719, cdc8b63). VPS bootstrap automation added with 13 SSH smoke tests — all passed (commit 004abec).
+- Next actionable task: Stage 2 — identify first logic source to port and record its expected inputs and outputs.
 
 ## 2. Port Logic
 
@@ -49,12 +49,14 @@ Pulse of Earth is a research and software project for collecting, processing, an
 - Estimated effort: M
 - Next actionable task: Define which project artifacts should be mirrored to GitHub.
 
-## 7. Deterministic Workflows & Tests
+## 7. Tests & Smoke-Tests
 
 - Objectives: Add focused checks that validate core logic and basic operational workflows.
 - Success criteria: Targeted tests and smoke-tests can run locally with documented commands.
 - Estimated effort: M
-- Next actionable task: Add a smoke-test checklist for the first runnable workflow.
+- Status: ✅ done (staging)
+- Progress: Added tests/test_staging_smoke.py with 13 SSH smoke tests against hermes-staging-01 — all passed (commit 004abec). Added tests/test_inventory_pytest.py for inventory tool (commit cdc8b63). Repository smoke test (tests/smoke_test.sh) validates required files and Python compilation.
+- Next actionable task: Add integration tests for ported logic as stage 2 progresses.
 
 ## 8. Docs & Backup/Restore
 
@@ -86,10 +88,19 @@ Pulse of Earth is a research and software project for collecting, processing, an
 11. Obsidian integration
 12. Linear integration
 13. n8n deterministic workflows
-14. Staging environment
+## 14. Staging Environment
+
+- Objectives: Bootstrap hermes-staging-01 (Ubuntu 26.04 LTS) with Docker, UFW, Fail2ban, swap, deploy user.
+- Success criteria: Bootstrap script runs idempotently, all 13 smoke tests pass, services active.
+- Estimated effort: M
+- Status: ✅ done
+- Progress: Created scripts/bootstrap-staging.sh and scripts/verify-staging.sh (commit 628fdfe). Executed bootstrap on VPS 157.180.125.174 — Docker 29.6.1, UFW (22/80/443), Fail2ban, 2GB swap, deploy user, project dirs all provisioned. 13 SSH smoke tests passed (commit 004abec). Report at docs/STAGING_BOOTSTRAP_REPORT.md.
+- Next actionable task: Verify deploy user SSH access with dedicated key before disabling root SSH (policy #9).
 15. Production deployment approval
 
 ## Recent updates (autopilot)
 
-- 2026-06-27T06:39:54Z: Wired tools/inventory.py into the CI smoke workflow so the inventory script is exercised in CI; local smoke tests passed.
-- 2026-06-27T08:43:43Z: Added a focused pytest (tests/test_inventory_pytest.py) to exercise tools/inventory.collect_files and render_inventory, created with Codex (sandbox: workspace-write). Verification executed locally in a project virtualenv (.venv_autopilot); tests passed and changes committed (commit cdc8b63).
+- 2026-06-27T19:57:00Z: Staging bootstrap executed on hermes-staging-01 (157.180.125.174). Bootstrap completed, 13 SSH smoke tests passed. Commits 628fdfe, 004abec on feat/staging-bootstrap.
+- 2026-06-27T19:51:00Z: Paused cron pulse-autopilot (job dd25d4fecd66) due to repeated error status.
+- 2026-06-27T08:43:43Z: Added focused pytest for tools/inventory.py (commit cdc8b63).
+- 2026-06-27T06:39:54Z: Wired tools/inventory.py into CI smoke workflow (commit 51f5719).
