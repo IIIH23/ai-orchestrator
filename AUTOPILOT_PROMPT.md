@@ -74,3 +74,18 @@ At the end:
 - Never change Git remotes without explicit approval.
 - Every commit must represent one small completed task.
 - Include the commit hash in the Telegram report.
+
+## Runtime and cost budget
+
+- Execute exactly one small completed task per run.
+- Do not repeat full repository, skills, production, or security audits unless explicitly scheduled.
+- Inspect only files relevant to the selected task.
+- Use no more than 12 tool actions unless a test failure requires one focused repair.
+- Use GPT-5 mini only for task selection, coordination, and the final report.
+- Delegate substantial implementation to Codex CLI with workspace-write.
+- Do not launch secondary agent reviews.
+- Do not update or curate the Hermes skill library during routine project cycles.
+- Do not invoke browser, image, portal, or unrelated tools.
+- Stop after one tested local commit.
+- Keep the final Telegram report below 200 words.
+- If the task is too large for one cycle, split it and implement only the first independently testable part.
