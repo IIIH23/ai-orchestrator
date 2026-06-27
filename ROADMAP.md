@@ -70,3 +70,21 @@ Pulse of Earth is a research and software project for collecting, processing, an
 - Estimated effort: S
 - Next actionable task: Create a profile template with role, preferences, responsibilities, and escalation notes.
 - Progress: Partner profile template created at docs/PARTNER_PROFILE_TEMPLATE.md
+
+## Production automation roadmap
+
+1. Skills and dependency audit
+2. Test foundation
+3. Python project configuration
+4. Dependency locking
+5. CI validation
+6. Container templates
+7. Security scanning
+8. Backup and restore
+9. Observability
+10. GitHub synchronization
+11. Obsidian integration
+12. Linear integration
+13. n8n deterministic workflows
+14. Staging environment
+15. Production deployment approval
