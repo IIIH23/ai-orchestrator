@@ -87,6 +87,19 @@
 5. Notify: Telegram alert to owner
 6. Post-mortem: document + ADR
 
+## GitHub Actions Security
+
+- Default permissions: `contents: read`
+- Write permissions scoped to specific jobs
+- Third-party actions pinned by commit SHA where practical
+- `actions/checkout` pinned to `v4` (SHA: `692973e3d937129bcbf40652eb9f2f61becf3332`)
+- `actions/setup-python` pinned to `v5` (SHA: `0b93645e9fea7318ecaed2b359559ac225c90a2b`)
+- Secrets never printed in logs
+- No secrets in fork PR workflows
+- Environment protection for staging/production
+- OIDC preferred over long-lived credentials where possible
+- Dependency review on PRs enabled
+
 ## Secret Rotation
 
 | Secret | Frequency | Method |
