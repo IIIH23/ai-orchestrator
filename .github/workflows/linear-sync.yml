@@ -2,17 +2,20 @@ name: Linear Sync
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   linear-sync:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+
       - name: Sync Linear
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
