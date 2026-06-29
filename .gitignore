@@ -17,3 +17,10 @@ credentials/
 
 # Local Python environments
 .venv_autopilot/
+
+# Test / editor artifacts
+.pytest_cache/
+*.old
+
+# Runtime output (autopilot/codex execution logs)
+artifacts/
