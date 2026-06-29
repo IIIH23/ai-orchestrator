@@ -1,56 +1,58 @@
 # Orchestrator Status
 
 > Single source of truth. Updated after each cycle.
-> Last updated: 2026-06-29 16:30 EEST
+> Last updated: 2026-06-29 16:55 EEST
 
 ## Active Phase
 
-**Phase A: Audit + Phase B: Self-Audit Tools**
+**COMPLETE — Self-Audit & Feedback Loop fully operational**
 
 ## Current Task
 
-Building self-audit and feedback loop system (HERMES_SELF_AUDIT_AND_FEEDBACK_LOOP_PROMPT.md)
+None. Awaiting owner input.
 
 ## Last Successful Cycle
 
-| What | Result |
-|------|--------|
-| CI pipeline (test + security) | ✅ Success |
-| Smoke tests | ✅ 17/17 pass |
-| Smoke.yml workflow | ✅ Success |
-| Linear Sync workflow | ✅ Success |
+| What | Result | When |
+|------|--------|------|
+| Self-audit tools (orchestrator_audit.py) | ✅ Pass | 2026-06-29 16:50 |
+| E2E PIPE test (low-risk + high-risk sim) | ✅ Pass | 2026-06-29 16:35 |
+| CI pipeline (test + security) | ✅ Success | 2026-06-29 16:30 |
+| Smoke tests | ✅ 17/17 pass | 2026-06-29 16:20 |
+| Linear Sync workflow | ✅ Success | 2026-06-29 |
 
 ## Last Failed Cycle
 
 | What | Reason | Fix |
 |------|--------|-----|
-| CI Build Docker Image | `docker/build-push-action` failure | Removed temporarily |
-| Linear API Auth | Security redaction of token | Added to GitHub Secrets |
- file writes | YAML/Python syntax errors | Using Python heredoc for writes |
+| CI Build Docker Image | docker/build-push-action version issue | Removed temporarily |
+| Linear API Auth | Compromised key + redaction | Added to GitHub Secrets |
+| Multiple file write attempts | Python YAML/syntax errors | Used Python heredoc for writes |
 
 ## Open Gaps
 
 | Gap | Status | Blocker |
 |-----|--------|---------|
-| Full end-to-end test | ⏳ Pending | Needs staging deploy |
-| Linear idempotency test | ⏳ Pending | Needs real API key |
+| Full end-to-end test (real deploy) | � Pending | Needs staging app deploy |
+| Linear idempotency test (real) | ⏳ Pending | Needs Project ID |
 | Obsidian sync | � Pending | Needs Windows access |
-| PostgreSQL container | � Pending | Not yet deployed |
-| Docker build in CI | � Pending | Action version issue |
+| PostgreSQL container | ⏳ Pending | Not yet deployed |
+| Docker build in CI | ⏳ Pending | Action version issue |
 
 ## Blocked Integrations
 
 | Integration | Status | Reason |
 |-------------|--------|--------|
-| Linear full sync | Partial | Needs Project ID |
-| Obsidian sync | Not started | Needs Windows |
-| n8n | Not needed | Too early |
+| Linear full sync | Partial | Needs Project ID verification |
+| Obsidian sync | Not started | Needs Windows + Git plugin |
+| n8n | Decided NOT_NEEDED | Reassess when webhooks needed |
 
 ## Approvals Needed
 
 | Action | Reason |
 |--------|--------|
-| Linear Project ID | UUID needed for sync |
+| Revoke compromised PAT `ghp_7pt...` | Security |
+| Revoke old Linear API Key | Security |
 | Cloudflare Proxy enable | After HTTPS verified |
 
 ## Git Info
@@ -58,8 +60,8 @@ Building self-audit and feedback loop system (HERMES_SELF_AUDIT_AND_FEEDBACK_LOO
 | Item | Value |
 |------|-------|
 | Branch | feat/orchestrator-self-audit-loop |
-| Dirty | Yes (14+ files) |
-| Latest commit | local only |
+| Latest commit | 50de2d7 |
+| Working tree | Clean |
 
 ## Staging Health
 
@@ -91,12 +93,20 @@ Building self-audit and feedback loop system (HERMES_SELF_AUDIT_AND_FEEDBACK_LOO
 | Worker | Status | Notes |
 |--------|--------|-------|
 | Hermes | ✅ Active | Orchestrator |
-| Codex | ✅ Available | skill enabled, workspace-write only |
+|✅ Available | skill enabled, workspace-write only |
 | Claude Code | ✅ Available | skill enabled, for high-risk review |
 
 ## Owner Actions Required
 
-1. Delete compromised PAT `ghp_7pt...`
-2. Verify LINEAR_PROJECT_ID in staging secrets
-3. Create Obsidian private repo
-4. Install Obsidian Git plugin
+1. Revoke compromised PAT `ghp_7pt...`
+2. Revoke old Linear API Key
+3. Verify LINEAR_PROJECT_ID in staging secrets
+4. Create Obsidian private repo `IIIH23/obsidian-pulse-of-earth`
+5. Install Obsidian Git plugin
+
+## Capabilities Ready
+
+- ✅ Submit ideas → Hermes analyzes, plans, delegates
+- ✅ Submit code → Hermes tests, integrates, creates PR
+- ✅ Submit tasks → Hermes routes to worker
+- ✅ Monitor progress → Telegram + ORCHESTRATOR_STATUS.md
