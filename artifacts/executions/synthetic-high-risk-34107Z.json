@@ -1,0 +1,14 @@
+{
+  "task_id": "TEST-HIGH-34107Z",
+  "title": "Synthetic high-risk (firewall)",
+  "risk": "high",
+  "status": "NEEDS_APPROVAL",
+  "workers": {
+    "hermes": true,
+    "codex": true,
+    "claude_code": true
+  },
+  "approvals_required": [
+    "firewall-change"
+  ]
+}
