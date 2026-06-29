@@ -1,0 +1,22 @@
+{
+  "task_id": "TEST-34107Z",
+  "title": "Synthetic low-risk task",
+  "risk": "low",
+  "status": "PARTIALLY_COMPLETED",
+  "branch": "feat/orchestrator-acceptance-subscription-audit",
+  "commit": "81b28953",
+  "pull_request": null,
+  "workers": {
+    "hermes": true,
+    "codex": false,
+    "claude_code": false
+  },
+  "gaps": [
+    "Docker build step needs investigation"
+  ],
+  "approvals_required": [],
+  "owner_actions": [
+    "Delete compromised PAT"
+  ],
+  "started_at": "20260629T134107Z"
+}
