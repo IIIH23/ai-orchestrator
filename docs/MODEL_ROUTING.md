@@ -1,78 +1,65 @@
 # Model Routing
 
-> Generated: 2026-06-27
-> Based on: ORCHESTRATOR_POLICY.md sections 1-3 + ORCHESTRATOR_COMPLETION_PROMPT section 3
+> Last updated: 2026-06-29
 
-## Routing Rules
+## Active Configuration
 
-### Primary Model: openrouter/owl-alpha
-Use for:
-- Owner dialogue and strategy
-- Task routing and prioritization
-- Discovery and planning
-- Synthesis and reporting
-- All orchestration decisions
+| Setting | Value |
+|---------|-------|
+| Primary model | `openrouter/owl-alpha` |
+| Provider | `openrouter` |
+| Base URL | `https://openrouter.ai/api/v1` |
+| API mode | `chat_completions` |
+| Max turns | 150 |
 
-### Auxiliary / Fallback: GPT-5 mini (via appropriate provider)
-Use for:
-- Cron orchestration
-- Brief checks and validations
-- Low-cost automation
-- Fallback if owl-alpha is unavailable
+## Roles
 
-### Coding Worker: Codex CLI
-Use for:
-- Code implementation and refactoring
-- Unit/integration tests
-- Shell scripts
-- GitHub Actions workflows
-- Dockerfiles
-- Code-related documentation
+| Role | Model | When to use |
+|------|-------|-------------|
+| **Primary orchestrator** | `openrouter/owl-alpha` | Dialogue, strategy, planning, discovery, synthesis, reports |
+| **Fallback/low-cost** | GPT-5 mini (via OpenAI) | Cron orchestration, brief checks, routing, low-cost automation |
+| **Coding worker** | Codex CLI | Code implementation, refactoring, tests, scripts, Dockerfiles |
+| **High-risk reviewer** | Claude Code | Security, infrastructure, secrets, database migrations, rollback logic |
 
-**Only via**: `codex exec --sandbox workspace-write "<narrow task>"`
-
-### High-Risk Reviewer: Claude Code
-Use for:
-- Security changes
-- Production architecture
-- Authentication and permissions
-- Secrets management
-- Database migrations
-- Infrastructure changes
-- Deployment changes
-- Rollback logic
-- Irreversible operations
-- Financially significant decisions
-
-## Decision Tree
+## Routing Decision Tree
 
 ```
 Task received
-  ├─ Is it a code implementation? → Codex CLI (workspace-write)
-  ├─ Is it a high-risk change? → Claude Code (review)
-  ├─ Is it a brief check/report? → GPT-5 mini
-  ├─ Is it orchestration/dialogue/synthesis? → owl-alpha (default)
-  └─ Fallback: GPT-5 mini if owl-alpha unavailable
+  ├─ Is it substantial code implementation? → Codex CLI (--sandbox workspace-write)
+  ├─ Is it high-risk (security/infra/secrets)? → Claude Code (review)
+  ├─ Is it brief check/report/cron? → GPT-5 mini
+  └─ Default → owl-alpha (orchestrator)
 ```
 
-## Escalation
+## Fallback Chain
 
-| Situation | Action |
-| --- | --- |
-| owl-alpha unavailable | Use GPT-5 mini, notify owner, prepare switch plan |
-| Codex fails | Retry once with narrower task scope, then report |
-| High-risk detected | Stop, invoke Claude via skill, await verdict |
-| Budget exceeded | Stop, report usage, do not spend more |
+```
+owl-alpha (primary)
+  ↓ (if unavailable)
+GPT-5 mini (fallback)
+  ↓ (if unavailable)
+Error + Telegram alert to owner
+```
 
-## Profile-to-Model Mapping
+## Profile Mapping
 
-| Profile | Primary Model | Coding Worker | Reviewer |
-| --- | --- | --- | --- |
-| default (owner) | owl-alpha | Codex (with approval) | Claude Code |
-| development | owl-alpha | Codex | Claude Code (high-risk) |
-| architecture | owl-alpha | Codex (ADR only) | Claude Code |
-| research | owl-alpha | — | — |
-| devops | owl-alpha | Codex | Claude Code (infra) |
-| design | owl-alpha | — | — |
-| finance | owl-alpha | — | — |
-| team | owl-alpha | — | — |
+| Profile | Model | Primary Use |
+|---------|-------|-------------|
+| `default` (owner) | owl-alpha | Orchestration, strategy, approvals |
+| `development` | owl-alpha + Codex | Coding, tests, CI/CD |
+| `architecture` | owl-alpha + Claude | ADR, security review |
+| `research` | owl-alpha | Analysis, knowledge notes |
+| `devops` | owl-alpha + Codex | Infrastructure, monitoring |
+| `design` | owl-alpha | UX specs, design briefs |
+| `finance` | GPT-5 mini | Budgets, cost estimates (read-only) |
+| `team` | GPT-5 mini | Task tracking, Linear sync |
+
+## Cron Configuration
+
+| Job | Model | Schedule |
+|-----|-------|----------|
+| `pulse-autopilot` | `openrouter/owl-alpha` | every 120m |
+
+## Verification
+
+Run: `bash scripts/verify-model-routing.sh`
