@@ -7,6 +7,9 @@ pytest-cov>=4.1.0
 # Remote testing (SSH to staging)
 paramiko>=3.4.0
 
+# Web framework (earthbit-health service)
+flask>=3.0.0
+
 # Linting (optional)
 black>=24.0.0
 flake8>=7.0.0

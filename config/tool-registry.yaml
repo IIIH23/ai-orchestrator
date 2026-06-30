@@ -1,0 +1,121 @@
+# Tool Registry
+# Defines available tools/MCP servers, their capabilities and access levels.
+
+tools:
+  - id: github_api
+    name: GitHub REST API
+    capabilities:
+      - repo_read
+      - workflow_read
+      - issue_read
+      - pr_read
+      - branch_read
+      - commit_read
+      - artifact_read
+    read_access: true
+    write_access: false
+    secret_access: false
+    risk_level: low
+    healthcheck: "curl -s -o /dev/null -w '%{http_code}' https://api.github.com/zen"
+    fallback: null
+
+  - id: github_actions
+    name: GitHub Actions
+    capabilities:
+      - workflow_dispatch
+      - workflow_log_read
+      - artifact_management
+      - environment_management
+    read_access: true
+    write_access: true
+    secret_access: true
+    risk_level: medium
+    healthcheck: "curl -s -o /dev/null -w '%{http_code}' https://api.github.com/zen"
+    fallback: null
+
+  - id: linear_api
+    name: Linear GraphQL API
+    capabilities:
+      - issue_read
+      - issue_create
+      - issue_update
+      - project_read
+      - team_read
+      - label_read
+      - initiative_read
+    read_access: true
+    write_access: true
+    secret_access: true
+    risk_level: medium
+    healthcheck: "echo ok"
+    fallback: null
+    auth_note: "LINEAR_API_KEY required - currently REVOKED"
+
+  - id: telegram_api
+    name: Telegram Bot API
+    capabilities:
+      - message_send
+      - chat_read
+    read_access: true
+    write_access: true
+    secret_access: true
+    risk_level: low
+    healthcheck: "echo ok"
+    fallback: null
+
+  - id: ssh_staging
+    name: SSH to Staging VPS
+    capabilities:
+      - command_execution
+      - file_read
+      - docker_status
+      - health_check
+    read_access: true
+    write_access: true
+    secret_access: true
+    risk_level: medium
+    healthcheck: "ssh -o ConnectTimeout=5 deploy@157.180.125.174 whoami"
+    fallback: null
+
+  - id: git_local
+    name: Local Git Operations
+    capabilities:
+      - status
+      - log
+      - diff
+      - branch
+      - fetch
+      - commit
+      - push
+    read_access: true
+    write_access: true
+    secret_access: false
+    risk_level: low
+    healthcheck: "git status --porcelain"
+    fallback: null
+
+  - id: codex_cli
+    name: Codex CLI
+    capabilities:
+      - code_generation
+      - code_review
+      - test_execution
+    read_access: false
+    write_access: true
+    secret_access: false
+    risk_level: low
+    healthcheck: "codex --version"
+    fallback: null
+
+  - id: obsidian_filesystem
+    name: Obsidian Vault Filesystem
+    capabilities:
+      - note_read
+      - note_write
+      - sync_status
+    read_access: true
+    write_access: true
+    secret_access: false
+    risk_level: low
+    healthcheck: "test -d docs/obsidian"
+    fallback: null

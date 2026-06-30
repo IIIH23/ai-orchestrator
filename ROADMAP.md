@@ -84,8 +84,10 @@ Pulse of Earth is a research and software project for collecting, processing, an
 - Objectives: Capture collaboration preferences, role boundaries, and operating principles for project partners.
 - Success criteria: Partner profile is documented and referenced by planning workflows.
 - Estimated effort: S
-- Next actionable task: Create a profile template with role, preferences, responsibilities, and escalation notes.
-- Progress: Partner profile template created at docs/PARTNER_PROFILE_TEMPLATE.md
+- Status: ✅ done
+- Completion summary: docs/STAGE_9_SPEC.md
+- Progress: Partner profile template created at docs/PARTNER_PROFILE_TEMPLATE.md. Concrete profile for project owner at docs/partners/dmytro.md. Stage 9 spec at docs/STAGE_9_SPEC.md.
+- Next actionable task: All Stages 1-9 complete. Project in maintenance/operational mode.
 
 ## Production automation roadmap
 
@@ -114,6 +116,7 @@ Pulse of Earth is a research and software project for collecting, processing, an
 
 ## Recent updates (autopilot)
 
+- 2026-06-29T15:38:00Z: Cycle 22 — Stage 9 complete. Created docs/STAGE_9_SPEC.md and docs/partners/dmytro.md. All Stages 1-9 complete. Project in maintenance/operational mode.
 - 2026-06-29T13:30:00Z: Cycle 21 — Stage 8 complete. Drafted backup inventory spec (docs/STAGE_8_SPEC.md). Tiered strategy: Tier 1 (critical Git assets), Tier 2 (reproducible from code), Tier 3 (secrets — excluded), Tier 4 (runtime artifacts — regenerated). Restore procedure documented with verification checklist. Tests still 124 passed, 3 skipped.
 - 2026-06-29T12:00:00Z: Cycle 20 — Stage 6 Phase 2 complete. Added drift-check job to CI workflow (.github/workflows/ci.yml). Non-blocking parallel job runs github_sync.py check/status --dry-run. Full suite: 111 passed, 3 skipped. Commit 2ff60b6. Stage 6 done.
 - 2026-06-29T09:11:00Z: Cycle 19 — Stage 6 Phase 1 complete. Implemented GitHub sync checker (tools/github_sync.py + 12 tests). check/status commands, --dry-run, --json, exit codes 0/1/2. Spec at docs/STAGE_6_SPEC.md. Full suite: 124 passed, 3 skipped. Commit c0ae8c3.

@@ -10,12 +10,13 @@
 | 1 | `git remote add origin <github-url>` | 0 | 🔴 Critical |
 | 2 | Create GitHub repository (private) | 0 | 🔴 Critical |
 | 3 | Push all branches to remote | 0 | 🔴 Critical |
-| 4 | Enable branch protection on main | 2 | 🔴 Critical |
-| 5 | Require CI status checks | 2 | 🔴 Critical |
-| 6 | Disable force push on main | 2 | 🔴 Critical |
-| 7 | Create staging environment | 2 | 🔴 Critical |
-| 8 | Add secrets to staging environment (see below) | 2 | 🔴 Critical |
-| 9 | Create production environment (future) | 2 | 🟡 Medium |
+| 4 | ~~Enable branch protection on main~~ | 2 | ✅ COMPLETED |
+| 5 | ~~Require CI status checks~~ | 2 | ✅ COMPLETED |
+| 6 | ~~Disable force push on main~~ | 2 | ✅ COMPLETED |
+| 7 | ~~Create staging environment~~ | 2 | ✅ COMPLETED |
+| 8 | ~~Add secrets to staging environment~~ | 2 | ✅ COMPLETED |
+| 9 | ~~Create production environment~~ | 2 | ✅ COMPLETED |
+| 42 | ~~Revoke old PAT ghp_7pt...~~ | Security | ✅ COMPLETED |
 
 ## GitHub Secrets (staging environment)
 
@@ -110,10 +111,11 @@
 
 | Priority | Count | Actions |
 | --- | --- | --- |
-| 🔴 Critical | 9 | GitHub setup, secrets, branch protection |
+| 🔴 Critical | 0 | (all completed) |
 | 🟡 Medium | 22 | Cloudflare, Linear, Obsidian, Telegram, Hetzner, systemd |
 | 🟢 Low | 10 | Access policies, n8n, future setup |
-| **Total** | **41** | |
+| ✅ Completed | 11 | GitHub setup, secrets, branch protection, environments, PAT revocation |
+| **Total** | **32 active + 11 done** | |
 
 ## Suggested Order
 

@@ -1,0 +1,125 @@
+# Agent Registry
+# Defines available agents, their capabilities, risk levels, and auth methods.
+
+agents:
+  - id: hermes
+    name: Hermes (Default Orchestrator)
+    type: primary
+    capabilities:
+      - planning
+      - task_routing
+      - risk_classification
+      - evidence_design
+      - aggregation
+      - owner_communication
+      - context_management
+    risk_level: low
+    auth_method: ssh_key
+    cost_class: standard
+    available: true
+    healthcheck: "echo ok"
+    timeout: 30
+    fallback: null
+    allowed_actions:
+      - read_files
+      - git_operations_local
+      - run_tests
+      - create_docs
+      - call_codex
+      - call_claude_code
+      - verify_external_systems
+    forbidden_actions:
+      - modify_secrets
+      - production_deploy
+      - dns_changes
+      - firewall_changes
+      - paid_resource_creation
+      - credential_rotation
+
+  - id: codex
+    name: OpenAI Codex CLI
+    type: coding
+    capabilities:
+      - code_implementation
+      - refactoring
+      - debugging
+      - test_creation
+      - ci_cd_config
+      - docker_config
+      - terraform_plan
+      - api_clients
+      - adapters
+      - repair_patches
+    risk_level: low
+    auth_method: openai_oauth
+    cost_class: premium
+    available: true
+    healthcheck: "codex --version"
+    timeout: 300
+    fallback: hermes
+    allowed_actions:
+      - code_editing
+      - file_creation
+      - test_execution
+      - git_commit_feature_branch
+      - pr_creation
+    forbidden_actions:
+      - push_to_main
+      - modify_secrets
+      - production_deploy
+      - delete_files
+      - modify_auth
+
+  - id: claude_code
+    name: Claude Code CLI
+    type: reviewer
+    capabilities:
+      - high_risk_review
+      - security_review
+      - architecture_review
+      - infrastructure_review
+      - permission_review
+      - rollback_review
+      - database_review
+      - second_opinion
+    risk_level: medium
+    auth_method: anthropic_oauth
+    cost_class: premium
+    available: false
+    healthcheck: "claude --version"
+    timeout: 600
+    fallback: null
+    allowed_actions:
+      - read_files
+      - create_review_artifacts
+      - provide_verdict
+    forbidden_actions:
+      - code_editing
+      - git_operations
+      - modify_secrets
+      - production_deploy
+
+  - id: owl_alpha
+    name: GPT-5 Mini (OpenRouter)
+    type: reasoning
+    capabilities:
+      - orchestration
+      - routing
+      - validation
+      - summarization
+      - critique
+    risk_level: low
+    auth_method: api_key
+    cost_class: cheap
+    available: true
+    healthcheck: "echo ok"
+    timeout: 60
+    fallback: null
+    allowed_actions:
+      - reasoning
+      - planning
+      - classification
+    forbidden_actions:
+      - code_editing
+      - git_operations
+      - external_api_calls
