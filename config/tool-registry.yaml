@@ -1,40 +1,30 @@
 # Tool Registry
-# Defines available tools/MCP servers, their capabilities and access levels.
+# MCP-style tool definitions, access levels, and approval gates.
 
 tools:
-  - id: github_api
-    name: GitHub REST API
+  - id: github
+    name: GitHub MCP / REST API
+    mcp_server: github
     capabilities:
       - repo_read
       - workflow_read
+      - workflow_log_read
       - issue_read
       - pr_read
       - branch_read
       - commit_read
       - artifact_read
-    read_access: true
-    write_access: false
-    secret_access: false
-    risk_level: low
-    healthcheck: "curl -s -o /dev/null -w '%{http_code}' https://api.github.com/zen"
-    fallback: null
-
-  - id: github_actions
-    name: GitHub Actions
-    capabilities:
       - workflow_dispatch
-      - workflow_log_read
-      - artifact_management
-      - environment_management
     read_access: true
     write_access: true
     secret_access: true
     risk_level: medium
     healthcheck: "curl -s -o /dev/null -w '%{http_code}' https://api.github.com/zen"
-    fallback: null
+    approval_note: "Secret changes, protected branches, PR merge, and workflow dispatch with side effects need owner approval."
 
-  - id: linear_api
-    name: Linear GraphQL API
+  - id: linear
+    name: Linear MCP / GraphQL API
+    mcp_server: linear
     capabilities:
       - issue_read
       - issue_create
@@ -47,75 +37,97 @@ tools:
     write_access: true
     secret_access: true
     risk_level: medium
-    healthcheck: "echo ok"
-    fallback: null
-    auth_note: "LINEAR_API_KEY required - currently REVOKED"
+    healthcheck: "echo requires_LINEAR_API_KEY"
+    approval_note: "Writes require scoped token and evidence from Linear after execution."
 
-  - id: telegram_api
-    name: Telegram Bot API
-    capabilities:
-      - message_send
-      - chat_read
-    read_access: true
-    write_access: true
-    secret_access: true
-    risk_level: low
-    healthcheck: "echo ok"
-    fallback: null
-
-  - id: ssh_staging
-    name: SSH to Staging VPS
-    capabilities:
-      - command_execution
-      - file_read
-      - docker_status
-      - health_check
-    read_access: true
-    write_access: true
-    secret_access: true
-    risk_level: medium
-    healthcheck: "ssh -o ConnectTimeout=5 deploy@157.180.125.174 whoami"
-    fallback: null
-
-  - id: git_local
-    name: Local Git Operations
-    capabilities:
-      - status
-      - log
-      - diff
-      - branch
-      - fetch
-      - commit
-      - push
-    read_access: true
-    write_access: true
-    secret_access: false
-    risk_level: low
-    healthcheck: "git status --porcelain"
-    fallback: null
-
-  - id: codex_cli
-    name: Codex CLI
-    capabilities:
-      - code_generation
-      - code_review
-      - test_execution
-    read_access: false
-    write_access: true
-    secret_access: false
-    risk_level: low
-    healthcheck: "codex --version"
-    fallback: null
-
-  - id: obsidian_filesystem
-    name: Obsidian Vault Filesystem
+  - id: obsidian
+    name: Obsidian Vault Filesystem MCP
+    mcp_server: filesystem
     capabilities:
       - note_read
       - note_write
+      - note_index
+      - backlink_context
       - sync_status
     read_access: true
     write_access: true
     secret_access: false
     risk_level: low
     healthcheck: "test -d docs/obsidian"
-    fallback: null
+
+  - id: filesystem
+    name: Repository Filesystem MCP
+    mcp_server: filesystem
+    capabilities:
+      - file_read
+      - file_write
+      - search
+      - patch
+      - artifact_write
+    read_access: true
+    write_access: true
+    secret_access: false
+    risk_level: low
+    healthcheck: "test -d tools && test -d docs"
+
+  - id: shell
+    name: Local Shell MCP
+    mcp_server: shell
+    capabilities:
+      - command_execution
+      - test_execution
+      - git_local
+      - health_checks
+    read_access: true
+    write_access: true
+    secret_access: false
+    risk_level: medium
+    healthcheck: "python3 --version"
+    approval_note: "Destructive commands, production actions, and secret-touching commands require approval."
+
+  - id: telegram
+    name: Telegram Bot API MCP
+    mcp_server: telegram
+    capabilities:
+      - message_send
+      - chat_read
+      - delivery_validation
+    read_access: true
+    write_access: true
+    secret_access: true
+    risk_level: low
+    healthcheck: "echo requires_TELEGRAM_BOT_TOKEN"
+    approval_note: "External messaging outside this chat requires explicit target approval."
+
+  - id: cloudflare
+    name: Cloudflare API MCP
+    mcp_server: cloudflare
+    capabilities:
+      - zone_read
+      - dns_record_read
+      - dns_record_create
+      - dns_record_update
+      - dns_record_delete
+    read_access: true
+    write_access: true
+    secret_access: true
+    risk_level: high
+    healthcheck: "echo requires_CF_API_TOKEN"
+    approval_note: "DNS mutation requires exact owner approval and rollback record."
+
+  - id: hetzner
+    name: Hetzner Cloud API MCP
+    mcp_server: hetzner
+    capabilities:
+      - server_read
+      - firewall_read
+      - server_create
+      - server_resize
+      - server_delete
+      - paid_resource_management
+    read_access: true
+    write_access: true
+    secret_access: true
+    risk_level: high
+    healthcheck: "echo requires_HCLOUD_TOKEN"
+    approval_note: "Any paid-resource mutation requires owner approval for exact operation and cost."

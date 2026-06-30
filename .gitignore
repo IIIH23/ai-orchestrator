@@ -43,6 +43,8 @@ scripts/obsidian-sync.ps1
 # Agent and tool registries are tracked; other config/ files are ignored.
 !config/agent-registry.yaml
 !config/tool-registry.yaml
+!config/orchestrator-schema.yaml
 config/*
 !config/agent-registry.yaml
 !config/tool-registry.yaml
+!config/orchestrator-schema.yaml

@@ -1,0 +1,87 @@
+# Pulse of Earth autonomous orchestrator configuration schema (secret-free).
+# Secrets are referenced by environment variable name only and must never be committed.
+
+version: 1
+rag:
+  indexes:
+    - id: obsidian
+      source: obsidian
+      path: docs/obsidian
+      include: ["**/*.md"]
+      exclude: ["**/.obsidian/**", "**/.trash/**"]
+    - id: github_repo
+      source: filesystem
+      path: .
+      include: ["tools/**/*.py", "tests/**/*.py", "docs/**/*.md", "config/**/*.yaml", ".github/workflows/*.yml"]
+      exclude: [".git/**", ".venv/**", "artifacts/**", "*.log", ".env*"]
+    - id: linear
+      source: linear
+      query: "project:Pulse of Earth"
+      secret_ref: LINEAR_API_KEY
+    - id: github_actions_logs
+      source: github
+      repository: IIIH23/earth-pulse-poc
+      log_retention_days: 30
+      secret_ref: GITHUB_TOKEN
+    - id: hermes_logs
+      source: filesystem
+      path: logs
+      include: ["*.md"]
+      secret_redaction_required: true
+mcp:
+  servers:
+    github: {tool_id: github, secret_ref: GITHUB_TOKEN}
+    linear: {tool_id: linear, secret_ref: LINEAR_API_KEY}
+    obsidian: {tool_id: obsidian}
+    filesystem: {tool_id: filesystem}
+    shell: {tool_id: shell}
+    telegram: {tool_id: telegram, secret_ref: TELEGRAM_BOT_TOKEN}
+    cloudflare: {tool_id: cloudflare, secret_ref: CF_API_TOKEN}
+    hetzner: {tool_id: hetzner, secret_ref: HCLOUD_TOKEN}
+agents:
+  registry_path: config/agent-registry.yaml
+  default: planner
+  task_routes:
+    code: coder_codex
+    review: reviewer_claude
+    architecture: reviewer_claude
+    rag: rag_librarian
+    verification: verifier
+    budget: budget_model_router
+model_router:
+  enabled: true
+  max_retries_per_model: 3
+  rate_limit_status_codes: [429]
+  avoid_openrouter_free_after_rate_limit: true
+  candidates:
+    - id: openrouter_owl_alpha
+      provider: openrouter
+      model: openrouter/owl-alpha
+      base_url: https://openrouter.ai/api/v1
+      cost_class: free
+      free_tier: true
+      enabled: true
+    - id: openai_codex_gpt_5_5
+      provider: openai-codex
+      model: gpt-5.5
+      base_url: https://chatgpt.com/backend-api/codex
+      cost_class: paid
+      enabled: true
+    - id: anthropic_claude_sonnet
+      provider: anthropic
+      model: claude-sonnet-4
+      cost_class: paid
+      enabled: false
+verification:
+  state_path: artifacts/verification_state.json
+  require_evidence_before_complete: true
+  evidence_kinds: [test, ci, api_readback, log_excerpt, artifact, external_side_effect]
+approval_boundaries:
+  require_owner_approval:
+    - secret_create_update_delete
+    - production_deploy
+    - dns_change
+    - firewall_change
+    - hetzner_paid_resource_mutation
+    - github_environment_secret_change
+    - external_message_outside_owner_chat
