@@ -8,6 +8,7 @@ on:
 jobs:
   linear-sync:
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,4 +17,5 @@ jobs:
       - name: Sync Linear
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
-        run: python3 tools/linear_sync.py --dry-run
+          LINEAR_PROJECT_ID: ${{ secrets.LINEAR_PROJECT_ID }}
+        run: python3 tools/linear_sync.py
