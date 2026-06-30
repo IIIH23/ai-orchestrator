@@ -18,4 +18,4 @@ jobs:
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           LINEAR_PROJECT_ID: ${{ secrets.LINEAR_PROJECT_ID }}
-        run: python3 tools/linear_sync.py
+        run: python3 tools/linear_sync.py --project-id "$LINEAR_PROJECT_ID"
