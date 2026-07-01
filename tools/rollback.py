@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Save, list, and restore Pulse of Earth container releases."""
+"""Save, list, and restore AI Orchestrator container releases."""
 
 from __future__ import annotations
 
@@ -14,31 +14,40 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 
-IMAGE_REPOSITORY = "ghcr.io/hermes/pulse-of-earth"
+IMAGE_REPOSITORY = os.getenv(
+    "AI_ORCHESTRATOR_IMAGE",
+    "ghcr.io/iiih23/ai-orchestrator",
+)
 HEALTH_URL = "http://127.0.0.1:8080/health"
 COMMAND_TIMEOUT_SECONDS = 60
 HEALTH_WAIT_SECONDS = 5
 
 
+def _running_as_root() -> bool:
+    """Return whether the current process is root on a POSIX platform."""
+    get_effective_user_id = getattr(os, "geteuid", None)
+    return get_effective_user_id is not None and get_effective_user_id() == 0
+
+
 def default_state_dir() -> Path:
     """Return the release-state directory for the current user."""
-    if os.geteuid() == 0:
-        return Path("/opt/terrabits/releases")
-    return Path.home() / ".pulse-of-earth" / "releases"
+    if _running_as_root():
+        return Path("/opt/ai-orchestrator/releases")
+    return Path.home() / ".ai-orchestrator" / "releases"
 
 
 def default_compose_file() -> Path:
     """Return the Compose file path for the current user."""
-    if os.geteuid() == 0:
-        return Path("/opt/terrabits/apps/pulse-of-earth/compose.yaml")
+    if _running_as_root():
+        return Path("/opt/ai-orchestrator/compose.yaml")
     return Path.cwd() / "compose.yaml"
 
 
 def default_log_file() -> Path:
     """Return the rollback log path for the current user."""
-    if os.geteuid() == 0:
-        return Path("/opt/terrabits/backups/rollback.log")
-    return Path.home() / ".pulse-of-earth" / "backups" / "rollback.log"
+    if _running_as_root():
+        return Path("/opt/ai-orchestrator/logs/rollback.log")
+    return Path.home() / ".ai-orchestrator" / "logs" / "rollback.log"
 
 
 def utc_timestamp(compact: bool = False) -> str:

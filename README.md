@@ -32,14 +32,43 @@ ownership boundary and infrastructure-fit assessment.
 ## Current maturity
 
 The agent registries, verification tools, repository adapters, and operational
-patterns are useful today. The Docker/Compose and Terraform assets are
-prototypes and are not a production runtime for Pulse of Earth without further
-work. In particular, the current Compose service is an Orchestrator utility
-container, not the Earth Pulse application.
+patterns are useful today. The repository exposes a minimal operational API
+with real health, version, and managed-project endpoints. Docker and Compose run
+that API as a non-root, read-only container.
+
+Terraform and environment-specific staging automation remain prototypes and
+must be validated before production use. The Orchestrator runtime is not the
+Pulse of Earth application runtime.
+
+## Local runtime
+
+```bash
+python -m venv .venv
+python -m pip install -r requirements-dev.txt
+python -m pytest -q --ignore=tests/test_staging_smoke.py --ignore=tests/test_lockdown_ssh.py
+python -m orchestrator_api.app
+```
+
+Install `requirements-quality.txt` for lint/type-check tooling and
+`requirements-remote.txt` only when running SSH-backed staging tests.
+
+The local API listens on `http://127.0.0.1:8080` by default:
+
+- `GET /health` — runtime status;
+- `GET /version` — service version;
+- `GET /v1/projects` — configured project profile identifiers.
+
+Container workflow:
+
+```bash
+docker compose up --build
+curl http://127.0.0.1:8080/health
+```
 
 ## Repository map
 
 - `config/` — agent and tool registries.
+- `orchestrator_api/` — minimal operational HTTP API.
 - `tools/` — verification, synchronization, reporting, and rollback tools.
 - `scripts/` — staging and integration helpers.
 - `projects/` — product-specific integration profiles.

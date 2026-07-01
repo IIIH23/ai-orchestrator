@@ -1,19 +1,17 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-pulse}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-pulse_of_earth}
+      POSTGRES_USER: ${DB_USER:-orchestrator}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      POSTGRES_DB: ${DB_NAME:-ai_orchestrator}
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./backups    ports:
+    ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pulse}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-orchestrator} -d ${DB_NAME:-ai_orchestrator}"]
       interval: 10s
       timeout: 5s
       retries: 5

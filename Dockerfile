@@ -1,17 +1,33 @@
 # syntax=docker/dockerfile:1
-FROM python:3.11-slim AS builder
-WORKDIR /build
-COPY requirements*.txt ./ 2>/dev/null || true
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt 2>/dev/null || true
-RUN pip install --no-cache-dir --prefix=/install -r requirements-dev.txt 2>/dev/null || true
+FROM python:3.12-slim AS builder
 
-FROM python:3.11-slim AS runtime
-RUN groupadd --system app && useradd --system --gid app --home /app app
+WORKDIR /build
+COPY requirements.txt .
+RUN python -m pip install \
+    --no-cache-dir \
+    --disable-pip-version-check \
+    --prefix=/install \
+    -r requirements.txt
+
+FROM python:3.12-slim AS runtime
+
+RUN groupadd --system orchestrator \
+    && useradd --system --gid orchestrator --home /app orchestrator
+
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends git curl jq ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /install /usr/local
-COPY --chown=app:app . .
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app
-USER app
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD python -c "import sys; sys.exit(0)" || exit 1
-CMD ["python", "tools/inventory.py"]
+COPY --chown=orchestrator:orchestrator orchestrator_api ./orchestrator_api
+COPY --chown=orchestrator:orchestrator projects ./projects
+
+ENV ORCHESTRATOR_ENV=production \
+    ORCHESTRATOR_PORT=8080 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+USER orchestrator
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["python", "-m", "orchestrator_api.healthcheck"]
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--access-logfile", "-", "orchestrator_api.app:create_app()"]

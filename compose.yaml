@@ -1,13 +1,9 @@
-# Docker Compose for Pulse of Earth
-
-version: "3.9"
-
 services:
-  app:
+  orchestrator:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/hermes/pulse-of-earth:staging
+    image: ghcr.io/iiih23/ai-orchestrator:${IMAGE_TAG:-staging}
     restart: unless-stopped
     read_only: true
     security_opt:
@@ -15,15 +11,14 @@ services:
     cap_drop:
       - ALL
     tmpfs:
-      - /tmp:size=64M
+      - /tmp:size=64M,mode=1777
     environment:
-      - ENVIRONMENT=staging
-      - PYTHONPATH=/app
-    volumes:
-      - app-data:/app/data
-      - app-logs:/app/logs
+      ORCHESTRATOR_ENV: ${ORCHESTRATOR_ENV:-staging}
+      ORCHESTRATOR_PORT: "8080"
+    ports:
+      - "${ORCHESTRATOR_BIND_ADDRESS:-127.0.0.1}:${ORCHESTRATOR_PORT:-8080}:8080"
     healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      test: ["CMD", "python", "-m", "orchestrator_api.healthcheck"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -32,11 +27,7 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512M
+          memory: 256M
         reservations:
-          cpus: "0.25"
-          memory: 128M
-
-volumes:
-  app-data:
-  app-logs:
+          cpus: "0.10"
+          memory: 64M

@@ -1,0 +1,14 @@
+.git
+.github
+.pytest_cache
+.venv*
+artifacts
+audit
+docs
+infrastructure
+logs
+scripts
+tests
+__pycache__
+*.py[cod]
+*.log
