@@ -111,7 +111,7 @@ def verify_recent_commits(owner: str, repo: str, per_page: int = 3) -> list[dict
 
 def main() -> int:
     """Run GitHub verification checks."""
-    owner, repo = "IIIH23", "earth-pulse-poc"
+    owner, repo = "IIIH23", "ai-orchestrator"
 
     print("=== GitHub Verification ===")
 

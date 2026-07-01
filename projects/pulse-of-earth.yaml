@@ -1,0 +1,52 @@
+schema_version: "1.0"
+
+project:
+  id: pulse-of-earth
+  name: Pulse of Earth
+  repository: IIIH23/earth-pulse-poc
+  default_branch: main
+  role: managed_product
+
+ownership:
+  product_repository:
+    - earth_period.py
+    - earth_26s_detector.py
+    - collect_earth_period.py
+    - collect_earth_26s.py
+    - generate_earth_pulse_json.py
+    - earth-pulse.json
+    - docs/earth-pulse-json-contract.md
+  orchestrator_repository:
+    - agent_routing
+    - approval_policy
+    - verification
+    - roadmap_sync
+    - operational_notifications
+
+integration:
+  deployment_model: github_actions_serverless_feed
+  public_artifact:
+    path: earth-pulse.json
+    url: https://raw.githubusercontent.com/IIIH23/earth-pulse-poc/main/earth-pulse.json
+  workflows:
+    - ci.yml
+    - update-earth-pulse.yml
+  allowed_operations:
+    - repository_read
+    - workflow_read
+    - workflow_dispatch
+    - pull_request_create
+    - issue_sync
+    - status_notify
+  owner_approval_required:
+    - direct_push_to_main
+    - production_environment_change
+    - secret_change
+    - dns_change
+    - paid_resource_creation
+
+runtime:
+  requires_orchestrator_container: false
+  requires_postgresql: false
+  requires_n8n: false
+  requires_cloudflare: false

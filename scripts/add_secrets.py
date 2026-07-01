@@ -90,7 +90,7 @@ def main():
     parser = argparse.ArgumentParser(description="Manage GitHub environment secrets")
     parser.add_argument("--token", help="GitHub PAT (or GITHUB_TOKEN env var)")
     parser.add_argument("--owner", default="IIIH23")
-    parser.add_argument("--repo", default="earth-pulse-poc")
+    parser.add_argument("--repo", default="ai-orchestrator")
     parser.add_argument("--env", default="staging")
     parser.add_argument("--dry-run", action="store_true", default=True)
     parser.add_argument("--yes", action="store_true", help="Apply changes")

@@ -1,8 +1,10 @@
-# Pulse of Earth Agent Instructions
+# AI Orchestrator Agent Instructions
 
 ## Project
 
-Pulse of Earth is a research and software project for collecting, processing, analyzing, and visualizing Earth-related data.
+AI Orchestrator coordinates agents and operational integrations across product
+repositories. Product code remains in its owning repository; product-specific
+access is declared under `projects/`.
 
 ## Agent roles
 

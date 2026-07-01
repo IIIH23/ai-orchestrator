@@ -128,7 +128,7 @@ def main():
     parser = argparse.ArgumentParser(description="Setup GitHub branch protection + environments")
     parser.add_argument("--token", help="GitHub PAT (or GITHUB_TOKEN env var)")
     parser.add_argument("--owner", default="IIIH23")
-    parser.add_argument("--repo", default="earth-pulse-poc")
+    parser.add_argument("--repo", default="ai-orchestrator")
     parser.add_argument("--dry-run", action="store_true", default=True, help="Preview changes")
     parser.add_argument("--yes", action="store_true", help="Actually make changes")
     parser.add_argument("--setup-protection", action="store_true")
