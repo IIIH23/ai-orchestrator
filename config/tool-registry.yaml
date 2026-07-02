@@ -107,6 +107,21 @@ tools:
     healthcheck: "codex --version"
     fallback: null
 
+  - id: claude_code_cli
+    name: Claude Code CLI (Policy Adapter)
+    capabilities:
+      - code_review
+      - security_review
+      - architecture_review
+      - bounded_code_editing
+      - session_resume
+    read_access: true
+    write_access: true
+    secret_access: false
+    risk_level: medium
+    healthcheck: "python tools/claude_code_adapter.py health"
+    fallback: null
+
   - id: obsidian_filesystem
     name: Obsidian Vault Filesystem
     capabilities:
