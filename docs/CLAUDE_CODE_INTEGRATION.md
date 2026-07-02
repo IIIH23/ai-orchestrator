@@ -57,7 +57,31 @@ layer; command-line restrictions are applied per run.
   substituting the implementation agent.
 
 The `available` registry flag means the integration is enabled. Runtime
-availability can be supplied by the health-check layer to `route_task`.
+availability is collected by `tools/agent_runtime.py` and supplied to
+`route_task`; observed health overrides the static flag.
+
+## Runtime review gate
+
+Run a policy-aware review from the repository root:
+
+```bash
+python tools/review_gate.py security high \
+  --cwd . \
+  --prompt "Review the current branch for authentication vulnerabilities."
+```
+
+For long prompts, omit `--prompt` and pipe the request over stdin. The command:
+
+1. probes the registered agents without using a shell;
+2. resolves the primary worker and mandatory reviewers;
+3. stops if a required worker is unavailable;
+4. invokes Claude in read-only review mode;
+5. accepts only `approve`, `request_changes`, or `blocked`;
+6. returns JSON and uses exit code `0`, `1`, or `2` for approval/not-required,
+   rejected/blocked, or execution/policy failure respectively.
+
+Programmatic callers can use `tools.agent_runtime.resolve_route()` to retain
+both the route decision and per-agent health evidence.
 
 ## Audit and privacy
 
