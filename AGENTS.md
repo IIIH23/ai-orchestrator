@@ -56,3 +56,17 @@ Codex:
 - Add type hints where appropriate.
 - Avoid unnecessary dependencies.
 - Document non-obvious decisions.
+
+## Compiled wiki workflow
+
+- Search the compiled wiki with `python tools/wiki_layer.py query "<question>"`
+  before repeatedly reading raw project notes.
+- Treat files under `knowledge/raw/` as immutable after ingest.
+- Use `python tools/wiki_layer.py ingest` for new sources.
+- Curate generated draft pages under `knowledge/wiki/pages/`; preserve source
+  paths and SHA-256 provenance.
+- File durable conclusions back into the wiki with cross-links instead of
+  leaving them only in chat history.
+- Run `python tools/wiki_layer.py reindex` and
+  `python tools/wiki_layer.py lint` after wiki edits.
+- Read raw sources only for citation verification or documented knowledge gaps.

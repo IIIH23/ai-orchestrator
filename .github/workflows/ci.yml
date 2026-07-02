@@ -36,6 +36,8 @@ jobs:
           --ignore=tests/test_lockdown_ssh.py
       - name: Run repository smoke test
         run: bash tests/smoke_test.sh
+      - name: Validate compiled wiki
+        run: python tools/wiki_layer.py lint
 
   container:
     name: Container smoke test
