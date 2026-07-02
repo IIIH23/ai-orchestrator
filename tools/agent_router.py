@@ -1,132 +1,175 @@
 #!/usr/bin/env python3
-"""Agent router — selects appropriate worker for each task type."""
+"""Capability-aware agent routing with explicit high-risk review gates."""
 
 from __future__ import annotations
 
+import argparse
+import dataclasses
 import json
-import os
 import pathlib
+from collections.abc import Mapping, Sequence
 from typing import Any
+
+import yaml
 
 REGISTRY_PATH = pathlib.Path(__file__).parent.parent / "config" / "agent-registry.yaml"
 
+CODING_TASKS = {"code", "test", "debug", "refactor", "implement", "fix", "repair"}
+REVIEW_TASKS = {
+    "review",
+    "security",
+    "architecture",
+    "audit",
+    "infrastructure",
+    "permission",
+    "rollback",
+    "database",
+    "second_opinion",
+}
+RESEARCH_TASKS = {"research", "analysis", "discovery", "documentation", "knowledge"}
+INTEGRATION_TASKS = {"integration", "deploy", "sync", "configure"}
+MANDATORY_CLAUDE_REVIEW = {
+    "security",
+    "architecture",
+    "infrastructure",
+    "permission",
+    "rollback",
+    "database",
+    "deploy",
+}
 
-def _load_registry() -> list[dict[str, Any]]:
-    """Load agent registry (simplified YAML parsing without PyYAML)."""
-    if not REGISTRY_PATH.exists():
+
+@dataclasses.dataclass(frozen=True)
+class RouteDecision:
+    task_type: str
+    risk_level: str
+    primary: dict[str, Any] | None
+    reviewers: tuple[dict[str, Any], ...]
+    requires_owner_approval: bool
+    blocked_reason: str | None
+    reason: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "task_type": self.task_type,
+            "risk_level": self.risk_level,
+            "primary": self.primary,
+            "reviewers": list(self.reviewers),
+            "requires_owner_approval": self.requires_owner_approval,
+            "blocked_reason": self.blocked_reason,
+            "reason": self.reason,
+        }
+
+
+def load_registry(path: pathlib.Path = REGISTRY_PATH) -> list[dict[str, Any]]:
+    if not path.exists():
         return []
-    # Minimal YAML-like parser for our known structure
-    content = REGISTRY_PATH.read_text()
-    agents: list[dict[str, Any]] = []
-    current: dict[str, Any] | None = None
-    for line in content.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("- id:"):
-            if current:
-                agents.append(current)
-            current = {"id": stripped.split(":", 1)[1].strip()}
-        elif current and stripped.startswith("type:"):
-            current["type"] = stripped.split(":", 1)[1].strip()
-        elif current and stripped.startswith("name:"):
-            current["name"] = stripped.split(":", 1)[1].strip().strip('"')
-        elif current and stripped.startswith("available:"):
-            val = stripped.split(":", 1)[1].strip().lower()
-            current["available"] = val in ("true", "yes")
-        elif current and stripped.startswith("risk_level:"):
-            current["risk_level"] = stripped.split(":", 1)[1].strip()
-        elif current and stripped.startswith("cost_class:"):
-            current["cost_class"] = stripped.split(":", 1)[1].strip()
-    if current:
-        agents.append(current)
+    payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    agents = payload.get("agents", [])
+    if not isinstance(agents, list):
+        raise ValueError("agent registry must contain an agents list")
+    ids = [agent.get("id") for agent in agents if isinstance(agent, dict)]
+    if len(ids) != len(set(ids)):
+        raise ValueError("agent registry contains duplicate ids")
     return agents
 
 
+def _is_available(
+    agent: Mapping[str, Any] | None, availability: Mapping[str, bool] | None
+) -> bool:
+    if not agent:
+        return False
+    agent_id = str(agent.get("id"))
+    if availability is not None and agent_id in availability:
+        return availability[agent_id]
+    return bool(agent.get("available", False))
+
+
+def route_task(
+    task_type: str,
+    risk_level: str = "low",
+    *,
+    registry_path: pathlib.Path = REGISTRY_PATH,
+    availability: Mapping[str, bool] | None = None,
+) -> RouteDecision:
+    task_type = task_type.strip().lower()
+    risk_level = risk_level.strip().lower()
+    if risk_level not in {"low", "medium", "high"}:
+        raise ValueError("risk_level must be low, medium, or high")
+
+    agents = {agent["id"]: agent for agent in load_registry(registry_path)}
+
+    if task_type in REVIEW_TASKS:
+        primary_id, reason = "claude_code", "independent review task"
+    elif task_type in CODING_TASKS or task_type in INTEGRATION_TASKS:
+        primary_id, reason = "codex", "implementation or integration task"
+    elif task_type in RESEARCH_TASKS:
+        primary_id, reason = "owl_alpha", "research or knowledge task"
+    else:
+        primary_id, reason = "hermes", "orchestration fallback"
+
+    primary = agents.get(primary_id)
+    reviewers: list[dict[str, Any]] = []
+    claude = agents.get("claude_code")
+    claude_required = (
+        risk_level == "high"
+        or task_type in MANDATORY_CLAUDE_REVIEW
+    )
+
+    blocked_reason = None
+    if not _is_available(primary, availability):
+        blocked_reason = f"primary agent {primary_id} is unavailable"
+        primary = None
+
+    if claude_required and primary_id != "claude_code":
+        if _is_available(claude, availability):
+            reviewers.append(claude)
+        else:
+            blocked_reason = "required Claude Code review is unavailable"
+    elif primary_id == "claude_code" and not _is_available(claude, availability):
+        blocked_reason = "required Claude Code review is unavailable"
+
+    return RouteDecision(
+        task_type=task_type,
+        risk_level=risk_level,
+        primary=primary,
+        reviewers=tuple(reviewers),
+        requires_owner_approval=risk_level in {"medium", "high"},
+        blocked_reason=blocked_reason,
+        reason=reason,
+    )
+
+
 def select_worker(task_type: str, risk_level: str = "low") -> dict[str, Any] | None:
-    """Select appropriate worker based on task type and risk level."""
-    agents = _load_registry()
-
-    # Filter available agents
-    available = [a for a in agents if a.get("available", False)]
-
-    # Routing rules
-    coding_tasks = {"code", "test", "debug", "refactor", "implement", "fix", "repair"}
-    review_tasks = {"review", "security", "architecture", "audit", "second_opinion"}
-    research_tasks = {"research", "analysis", "discovery", "documentation"}
-    integration_tasks = {"integration", "deploy", "sync", "configure"}
-
-    if task_type in coding_tasks and risk_level in ("low", "medium"):
-        # Prefer Codex for coding
-        for a in available:
-            if a["id"] == "codex":
-                return a
-
-    if task_type in review_tasks or risk_level in ("medium", "high"):
-        # Prefer Claude Code for review/high-risk
-        for a in available:
-            if a["id"] == "claude_code":
-                return a
-        # Fallback to Codex if Claude unavailable
-        for a in available:
-            if a["id"] == "codex":
-                return a
-
-    if task_type in research_tasks:
-        for a in available:
-            if a["id"] == "owl_alpha":
-                return a
-
-    if task_type in integration_tasks:
-        for a in available:
-            if a["id"] == "codex":
-                return a
-
-    # Default: Hermes
-    for a in available:
-        if a["id"] == "hermes":
-            return a
-
-    return available[0] if available else None
+    """Backward-compatible primary-agent selector."""
+    return route_task(task_type, risk_level).primary
 
 
 def should_request_repair(task_type: str, attempt: int, max_attempts: int = 2) -> bool:
-    """Determine if repair should be attempted or escalated."""
-    if attempt >= max_attempts:
-        return False  # Escalate to owner/independent reviewer
-    return True
+    return attempt < max_attempts
 
 
 def should_escalate_to_owner(risk_level: str, failure_type: str) -> bool:
-    """Determine if owner approval is needed."""
-    if risk_level in ("medium", "high"):
-        return True
-    if failure_type in ("auth", "permission", "external_service", "owner_action"):
-        return True
-    return False
+    return risk_level in {"medium", "high"} or failure_type in {
+        "auth",
+        "permission",
+        "external_service",
+        "owner_action",
+    }
 
 
-def main() -> int:
-    """CLI for agent routing."""
-    import sys
-    if len(sys.argv) < 2:
-        print("Usage: python3 tools/agent_router.py <task_type> [risk_level]")
-        return 1
-
-    task_type = sys.argv[1]
-    risk_level = sys.argv[2] if len(sys.argv) > 2 else "low"
-
-    worker = select_worker(task_type, risk_level)
-    if worker:
-        print(json.dumps({
-            "task_type": task_type,
-            "risk_level": risk_level,
-            "selected_worker": worker["id"],
-            "worker_name": worker.get("name", worker["id"]),
-            "cost_class": worker.get("cost_class", "unknown"),
-        }, indent=2))
-        return 0
-    else:
-        print(json.dumps({"error": "No available worker", "task_type": task_type}))
-        return 1
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("task_type")
+    parser.add_argument("risk_level", nargs="?", default="low")
+    args = parser.parse_args(argv)
+    try:
+        decision = route_task(args.task_type, args.risk_level)
+    except (ValueError, yaml.YAMLError) as exc:
+        print(json.dumps({"error": str(exc)}))
+        return 2
+    print(json.dumps(decision.as_dict(), indent=2))
+    return 1 if decision.blocked_reason else 0
 
 
 if __name__ == "__main__":

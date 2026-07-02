@@ -85,17 +85,25 @@ agents:
     risk_level: medium
     auth_method: anthropic_oauth
     cost_class: premium
-    available: false
-    healthcheck: "claude --version"
+    available: true
+    healthcheck: "python tools/claude_code_adapter.py health"
     timeout: 600
     fallback: null
+    adapter: tools.claude_code_adapter
+    default_mode: review
+    supported_modes:
+      - review
+      - plan
+      - edit
     allowed_actions:
       - read_files
       - create_review_artifacts
       - provide_verdict
+      - bounded_code_editing
     forbidden_actions:
-      - code_editing
-      - git_operations
+      - unbounded_code_editing
+      - git_push
+      - destructive_git_operations
       - modify_secrets
       - production_deploy
 
