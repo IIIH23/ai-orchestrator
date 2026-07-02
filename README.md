@@ -10,6 +10,7 @@ task tracking, operational checks, and owner notifications.
 - integrate GitHub, Linear, Obsidian, Telegram, and staging infrastructure;
 - collect verification evidence and preserve an audit trail;
 - manage multiple product repositories through explicit project profiles.
+- compile reusable project knowledge into a local, persistent Markdown wiki.
 
 AI Orchestrator does **not** own product source code, scientific algorithms, or
 product runtime data. Those remain in their product repositories.
@@ -28,6 +29,24 @@ detector, collection scripts, or `earth-pulse.json`.
 
 See [`docs/ARCHITECTURE_BOUNDARIES.md`](docs/ARCHITECTURE_BOUNDARIES.md) for the
 ownership boundary and infrastructure-fit assessment.
+
+## Compiled wiki layer
+
+`tools/wiki_layer.py` implements a local raw → wiki → schema knowledge workflow.
+Agents ingest immutable raw sources once, query compact Markdown pages during
+normal work, and lint hashes, index coverage, and wikilinks.
+
+```bash
+python tools/wiki_layer.py init
+python tools/wiki_layer.py ingest
+python tools/wiki_layer.py query "deployment approval boundaries"
+python tools/wiki_layer.py lint
+python tools/wiki_layer.py stats
+```
+
+See [`docs/WIKI_LAYER.md`](docs/WIKI_LAYER.md). The statistics command measures
+actual corpus-size ratios; the repository does not assume a fixed token-saving
+percentage.
 
 ## Current maturity
 
@@ -69,6 +88,7 @@ curl http://127.0.0.1:8080/health
 
 - `config/` — agent and tool registries.
 - `orchestrator_api/` — minimal operational HTTP API.
+- `knowledge/` — immutable raw sources and compiled Markdown wiki.
 - `tools/` — verification, synchronization, reporting, and rollback tools.
 - `scripts/` — staging and integration helpers.
 - `projects/` — product-specific integration profiles.

@@ -119,3 +119,18 @@ tools:
     risk_level: low
     healthcheck: "test -d docs/obsidian"
     fallback: null
+
+  - id: wiki_layer
+    name: Local Compiled Wiki
+    capabilities:
+      - knowledge_ingest
+      - knowledge_query
+      - knowledge_lint
+      - knowledge_index
+      - knowledge_stats
+    read_access: true
+    write_access: true
+    secret_access: false
+    risk_level: low
+    healthcheck: "python tools/wiki_layer.py --help"
+    fallback: obsidian_filesystem
