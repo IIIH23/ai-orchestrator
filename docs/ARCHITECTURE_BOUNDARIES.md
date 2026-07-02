@@ -26,15 +26,16 @@ Useful now:
 - Telegram operational alerts;
 - reusable security, approval, monitoring, and rollback policies.
 
-Not suitable as the current Pulse of Earth runtime:
+Runtime boundary:
 
-- `compose.yaml` runs an Orchestrator inventory utility and does not expose an
-  application endpoint;
-- its container healthcheck only verifies that Python can exit successfully;
+- `compose.yaml` runs the AI Orchestrator operational API and exposes a real
+  health endpoint;
+- the Orchestrator container does not contain or serve Pulse of Earth product
+  code;
 - `infrastructure/terraform/main.tf` is a design document containing fenced HCL,
   not an executable Terraform module;
-- current CI does not exercise the complete test suite or validate a deployable
-  Pulse of Earth service;
+- local CI covers unit tests and validates the Orchestrator container; remote
+  staging tests remain explicit environment checks;
 - PostgreSQL, Caddy, Cloudflare, and n8n are not required for the existing
   serverless JSON-feed architecture.
 

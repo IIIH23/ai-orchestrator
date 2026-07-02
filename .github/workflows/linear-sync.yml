@@ -7,11 +7,13 @@ jobs:
   linear-sync:
     runs-on: ubuntu-latest
     environment: staging
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: "3.12"
       - name: Sync Linear
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}

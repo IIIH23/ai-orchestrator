@@ -2,33 +2,76 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [main]
   pull_request:
-    branches: [master, main]
+    branches: [main]
 
 permissions:
   contents: read
-  packages: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    name: Python tests
     runs-on: ubuntu-latest
-    environment: staging
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
-      - run: pip install -r requirements-dev.txt || pip install pytest
-      - run: python -m pytest tests/test_inventory_pytest.py -v
-      - run: bash tests/smoke_test.sh
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Validate environment
+        run: python -m pip check
+      - name: Compile Python sources
+        run: python -m compileall -q orchestrator_api tools
+      - name: Run local test suite
+        run: >-
+          python -m pytest -q
+          --ignore=tests/test_staging_smoke.py
+          --ignore=tests/test_lockdown_ssh.py
+      - name: Run repository smoke test
+        run: bash tests/smoke_test.sh
+
+  container:
+    name: Container smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+      - name: Build image
+        run: docker build --tag ai-orchestrator:test .
+      - name: Start container
+        run: docker run --detach --name ai-orchestrator-test --publish 18080:8080 ai-orchestrator:test
+      - name: Wait for health endpoint
+        shell: bash
+        run: |
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:18080/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs ai-orchestrator-test
+          exit 1
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs ai-orchestrator-test
 
   security:
+    name: Filesystem security scan
     runs-on: ubuntu-latest
-    environment: staging
     steps:
-      - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@master
+      - uses: actions/checkout@v7
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
