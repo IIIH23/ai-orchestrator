@@ -6,3 +6,4 @@ isort>=6,<7
 mypy>=1.15,<2
 ruff>=0.9,<1
 types-PyYAML>=6,<7
+pip-audit>=2.7,<3
