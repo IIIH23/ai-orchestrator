@@ -8,7 +8,6 @@ Does NOT perform admin API changes without explicit --yes flag.
 import argparse
 import json
 import os
-import pathlib
 import sys
 import urllib.request
 import urllib.error

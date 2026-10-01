@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-import pytest
 
 # Ensure project root is on sys.path so 'from tools import github_sync' works
 sys.path.insert(0, str(Path(__file__).parent.parent))

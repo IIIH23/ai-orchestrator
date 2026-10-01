@@ -1,4 +1,6 @@
-import json, urllib.request, os
+import json
+import urllib.request
+import os
 
 token = os.environ['CF_API_TOKEN']
 zone_id = os.environ['CF_ZONE_ID']

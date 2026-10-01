@@ -1,4 +1,6 @@
-import os, json, urllib.request
+import os
+import json
+import urllib.request
 
 key = os.environ.get('LINEAR_API_KEY', '')
 if not key or key == '***' or len(key) < 10:
@@ -86,10 +88,10 @@ for label_name in labels:
             print(f"  OK: {label_name}")
         else:
             print(f"  Exists: {label_name}")
-    except Exception as e:
+    except Exception:
         print(f"  Exists: {label_name}")
 
 # Result
-print(f"\n=== RESULT ===")
+print("\n=== RESULT ===")
 print(f"Project ID: {proj_id}")
 print(f"Team ID: {team_id}")

@@ -39,6 +39,22 @@ jobs:
       - name: Validate compiled wiki
         run: python tools/wiki_layer.py lint
 
+  lint:
+    name: Lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements-quality.txt
+      - name: Ruff
+        run: python -m ruff check .
+      - name: Mypy
+        run: python -m mypy
+
   container:
     name: Container smoke test
     runs-on: ubuntu-latest

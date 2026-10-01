@@ -1,4 +1,5 @@
-import urllib.request, json
+import urllib.request
+import json
 
 key = '***'
 url = 'https://api.linear.app/graphql'
