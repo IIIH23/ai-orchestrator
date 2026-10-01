@@ -12,7 +12,7 @@ IP="${2:?Usage: bash scripts/create-dns-record.sh <domain> <ip>}"
 echo "Creating DNS record: $DOMAIN → $IP"
 
 curl -s -X POST \
-  -H "Authorization: Bearer *** \
+  -H "Authorization: Bearer ${CF_API_TOKEN}" \
   -H "Content-Type: application/json" \
   "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records" \
   -d "{
