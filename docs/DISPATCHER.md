@@ -31,13 +31,14 @@ enqueue ──► SQLite queue ──► claim (lease)
   worktree under `ORCHESTRATOR_STATE_DIR/worktrees`.
 - A crashed dispatcher loses nothing: the lease expires and the task is
   claimed again.
+- Budget spend and circuit-breaker state are stored in
+  `ORCHESTRATOR_STATE_DIR/gateway.sqlite3` and survive a restart.
 - The ledger is written before the queue transition.
 
 ## What it does not do
 
 - It does not push or open pull requests. A finished task is a local commit
   on `task/<id>-a<attempt>`; publishing stays with the owner.
-- Budget and circuit-breaker state are in memory and reset on restart.
 - Linear and Obsidian status sync is not wired.
 
 ## Usage
