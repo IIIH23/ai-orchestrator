@@ -25,11 +25,14 @@ Codex:
 
 ## Cost policy
 
-- Use GPT-5 mini for routing and concise coordination.
+- Use GPT-5 mini for concise coordination and reports; worker routing is
+  deterministic code (`tools/agent_router.py`).
 - Delegate substantial coding work to Codex CLI.
 - Use `workspace-write` sandbox only.
 - Do not use premium models automatically.
-- Do not invoke a second model unless explicitly requested.
+- Invoke a second model only through the review gate, for high-risk or
+  sensitive tasks; never for routine work.
+- Full policy, budgets and enforcement status: `docs/TOKEN_POLICY.md`.
 
 ## Repository safety
 

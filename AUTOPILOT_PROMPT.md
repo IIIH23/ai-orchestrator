@@ -72,7 +72,7 @@
 - Delegate substantial code changes to Codex.
 - Do not invoke premium models or additional providers.
 - Do not perform a second LLM review after tests pass unless risk is high.
-- Keep the final Telegram report under 300 words.
+- Keep the final Telegram report under 200 words.
 
 ## Lock protocol
 
