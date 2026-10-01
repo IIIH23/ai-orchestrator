@@ -1,0 +1,34 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+
+# Known findings in legacy files. New code must pass without an entry here.
+[tool.ruff.lint.per-file-ignores]
+"scripts/linear_setup.py" = ["B904", "E501"]
+"scripts/verify-cf.py" = ["E501"]
+"tests/test_staging_smoke.py" = ["E501"]
+"tools/diff_snapshots.py" = ["B905"]
+"tools/healthcheck_report.py" = ["E402"]
+"tools/verify_all.py" = ["E501"]
+"tools/verify_linear.py" = ["E501"]
+"tools/verify_staging.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["tools", "orchestrator_api"]
+
+# Legacy modules with known type errors. New code is not added to this list;
+# remove a module from it when its errors are fixed.
+[[tool.mypy.overrides]]
+module = [
+    "tools.healthcheck_report",
+    "tools.snapshot",
+    "tools.verify_github",
+    "tools.verify_linear",
+    "tools.wiki_layer",
+]
+ignore_errors = true
