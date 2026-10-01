@@ -58,8 +58,12 @@ def _sync_safely(sync: Callable[[Task, str], None], ledger: Ledger,
 def tick(*, queue: Queue, route: Callable[[Task], str], gateway: Any,
          verify: Callable[[Task, Any], Any], ledger: Ledger,
          sync: Callable[[Task, str], None],
-         repo_is_clean: Callable[[str], bool], lease_seconds: int = 900) -> str:
+         repo_is_clean: Callable[[str], bool], lease_seconds: int = 900,
+         prepare: Callable[[Task], Task] | None = None) -> str:
     """Process at most one task.
+
+    prepare, when given, runs after the gates and returns the task the worker
+    and verifier will see (for example with a workdir in its envelope).
 
     Returns idle, needs_owner, blocked, deferred, done, retry or failed.
     """
@@ -76,7 +80,17 @@ def tick(*, queue: Queue, route: Callable[[Task], str], gateway: Any,
         queue.fail(task, "dirty_baseline")
         return "blocked"
 
-    result = gateway.invoke(route(task), task.envelope)
+    worker_id = route(task)
+    if prepare is not None:
+        try:
+            task = prepare(task)
+        except Exception as exc:  # noqa: BLE001 - no workspace, no worker run
+            ledger({"event": "prepare_error", "task": task.id,
+                    "error": str(exc)[:500]})
+            queue.fail(task, "prepare_failed")
+            return "blocked"
+
+    result = gateway.invoke(worker_id, task.envelope)
 
     if result.status == "deferred_budget":
         queue.defer(task, "budget")

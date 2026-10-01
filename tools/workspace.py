@@ -34,14 +34,26 @@ def repo_is_clean(repo: str | Path) -> bool:
     return result.returncode == 0 and not result.stdout.strip()
 
 
-def prepare(repo: str | Path, task_id: str, attempt: int, root: str | Path) -> Path:
-    """Create a worktree for one attempt and return its path."""
+def prepare(repo: str | Path, task_id: str, attempt: int, root: str | Path, *,
+            reuse: bool = False) -> Path:
+    """Create a worktree for one attempt and return its path.
+
+    With reuse, an existing worktree of the same attempt (left by a deferral
+    or a crashed run) is reset to its branch head instead of failing.
+    """
     if not _SAFE_ID.match(task_id):
         raise WorkspaceError(f"unsafe task id: {task_id!r}")
     name = f"{task_id}-a{attempt}"
     path = Path(root) / name
     if path.exists():
-        raise WorkspaceError(f"worktree already exists: {path}")
+        if not reuse:
+            raise WorkspaceError(f"worktree already exists: {path}")
+        for args in (("reset", "--hard", "-q"), ("clean", "-fdq")):
+            result = _git(path, *args)
+            if result.returncode != 0:
+                raise WorkspaceError(
+                    f"cannot reset worktree {path}: {result.stderr.strip()[:300]}")
+        return path
     path.parent.mkdir(parents=True, exist_ok=True)
     result = _git(repo, "worktree", "add", "-b", f"task/{name}", str(path), "HEAD")
     if result.returncode != 0:

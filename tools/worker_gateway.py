@@ -23,7 +23,7 @@ _QUOTA_PATTERN = re.compile(
 )
 _TRANSIENT_PATTERN = re.compile(
     r"connection (reset|refused|aborted)|timed? ?out|temporarily unavailable"
-    r"|\b50[234]\b|overloaded|network is unreachable",
+    r"|\b50[234]\b|overloaded|network is unreachable|worker unavailable",
     re.IGNORECASE,
 )
 

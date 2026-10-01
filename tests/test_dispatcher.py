@@ -81,12 +81,12 @@ class Harness:
         if self._sync_raises:
             raise RuntimeError("linear down")
 
-    def tick(self):
+    def tick(self, **extra):
         return dispatcher.tick(
             queue=self.queue, route=self._route,
             gateway=SimpleNamespace(invoke=self._invoke),
             verify=self._verify, ledger=self.ledger.append, sync=self._sync,
-            repo_is_clean=lambda repo: self._clean, lease_seconds=900)
+            repo_is_clean=lambda repo: self._clean, lease_seconds=900, **extra)
 
     def events(self, kind):
         return [event for event in self.ledger if event["event"] == kind]
@@ -175,6 +175,43 @@ class DispatcherTickTests(unittest.TestCase):
             order.append("queue"), original(task, reason))
         h.tick()
         self.assertEqual(order[:2], ["ledger", "queue"])
+
+
+class DispatcherPrepareTests(unittest.TestCase):
+    def test_prepared_task_is_what_the_worker_and_verifier_receive(self):
+        h = Harness(make_task())
+        seen = {}
+
+        def prepare(task):
+            task.envelope = {**task.envelope, "workdir": "/tmp/wt"}
+            return task
+
+        h._invoke_original = h._invoke
+
+        def invoke(worker_id, envelope):
+            seen["envelope"] = envelope
+            return h._invoke_original(worker_id, envelope)
+
+        h._invoke = invoke
+        self.assertEqual(h.tick(prepare=prepare), "done")
+        self.assertEqual(seen["envelope"]["workdir"], "/tmp/wt")
+
+    def test_prepare_runs_after_the_gates(self):
+        calls = []
+        h = Harness(make_task(), clean=False)
+        self.assertEqual(h.tick(prepare=calls.append), "blocked")
+        self.assertEqual(calls, [])
+
+    def test_prepare_failure_fails_the_task_without_running_a_worker(self):
+        h = Harness(make_task())
+
+        def prepare(task):
+            raise RuntimeError("worktree add failed")
+
+        self.assertEqual(h.tick(prepare=prepare), "blocked")
+        self.assertEqual(h.queue.calls[-1], ("fail", "t1", "prepare_failed"))
+        self.assertEqual(h.gateway_calls, [])
+        self.assertEqual(len(h.events("prepare_error")), 1)
 
 
 class DispatcherRunTests(unittest.TestCase):
