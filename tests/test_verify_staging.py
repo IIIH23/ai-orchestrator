@@ -52,5 +52,43 @@ class NoHardcodedHostsTests(unittest.TestCase):
         self.assertEqual(offenders, [])
 
 
+class FailClosedTests(unittest.TestCase):
+    """main() must not report success for an unhealthy staging host."""
+
+    def run_main(self, **overrides):
+        checks = {
+            "verify_ssh": mock.Mock(return_value=True),
+            "verify_docker": mock.Mock(return_value={
+                "docker_version": "Docker 27", "compose_version": "v2"}),
+            "verify_containers": mock.Mock(return_value=[]),
+            "verify_health_endpoint": mock.Mock(return_value={
+                "healthy": True, "response": "ok"}),
+            "verify_disk_usage": mock.Mock(return_value={"usage_percent": "10%"}),
+        }
+        checks.update(overrides)
+        with mock.patch.dict("os.environ", {"STAGING_HOST": "203.0.113.10"}), \
+                mock.patch.multiple(verify_staging, **checks):
+            return verify_staging.main()
+
+    def test_all_checks_healthy_passes(self):
+        self.assertEqual(self.run_main(), 0)
+
+    def test_unhealthy_endpoint_fails(self):
+        unhealthy = mock.Mock(return_value={"healthy": False, "response": "FAIL"})
+        self.assertNotEqual(self.run_main(verify_health_endpoint=unhealthy), 0)
+
+    def test_container_check_error_fails(self):
+        broken = mock.Mock(side_effect=verify_staging.StagingVerificationError("x"))
+        self.assertNotEqual(self.run_main(verify_containers=broken), 0)
+
+    def test_disk_check_error_fails(self):
+        broken = mock.Mock(side_effect=verify_staging.StagingVerificationError("x"))
+        self.assertNotEqual(self.run_main(verify_disk_usage=broken), 0)
+
+    def test_ssh_timeout_fails_instead_of_crashing(self):
+        timeout = mock.Mock(side_effect=subprocess.TimeoutExpired("ssh", 15))
+        self.assertEqual(self.run_main(verify_ssh=timeout), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
