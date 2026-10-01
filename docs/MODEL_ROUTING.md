@@ -64,6 +64,23 @@ Task received
 | High-risk detected | Stop, invoke Claude via skill, await verdict |
 | Budget exceeded | Stop, report usage, do not spend more |
 
+## Executable policy path
+
+The operational implementation is:
+
+```text
+config/agent-registry.yaml
+  -> tools.agent_runtime.resolve_route
+  -> tools.agent_router.route_task
+  -> tools.review_gate.run_review_gate
+  -> tools.claude_code_adapter.run_claude
+```
+
+Static `available` values enable an integration; runtime health is
+authoritative for execution. Mandatory reviewers fail closed when their
+healthcheck fails. Claude verdicts are machine-readable and never inferred from
+free-form text.
+
 ## Profile-to-Model Mapping
 
 | Profile | Primary Model | Coding Worker | Reviewer |

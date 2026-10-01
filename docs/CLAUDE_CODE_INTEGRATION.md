@@ -58,9 +58,11 @@ which would restrict every Claude Code session in this repository.
 - Missing Claude availability blocks a mandatory review instead of silently
   substituting the implementation agent.
 
-The `available` registry flag means the integration is enabled. Runtime
-availability is collected by `tools/agent_runtime.py` and supplied to
-`route_task`; observed health overrides the static flag.
+The `available` registry flag means the integration is enabled and is the
+operator's kill switch: an agent with `available: false` is never probed or
+used. For enabled agents, runtime availability is collected by
+`tools/agent_runtime.py` and supplied to `route_task`, so an agent is usable
+only when it is both enabled and healthy.
 
 ## Runtime review gate
 
