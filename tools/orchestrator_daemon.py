@@ -166,7 +166,8 @@ class Orchestrator:
         workdir = workspace.prepare(task.repo, task.id, task.attempt, self.worktrees,
                                     reuse=True)
         task.envelope = {**task.envelope, "workdir": str(workdir),
-                         "allowed_paths": list(task.allowed_paths)}
+                         "allowed_paths": list(task.allowed_paths),
+                         "task_id": task.id}
         return task
 
     def _review(self, task: Task, route: RouteDecision,

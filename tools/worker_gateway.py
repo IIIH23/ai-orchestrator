@@ -188,10 +188,14 @@ class WorkerGateway:
 
     def invoke(self, worker_id: str, envelope: Mapping[str, Any]) -> GatewayResult:
         project = str(envelope.get("project", ""))
+        task_id = envelope.get("task_id")
         requested = worker_id
         current: str | None = worker_id
         visited: set[str] = set()
         reason = ""
+
+        def record(event: dict[str, Any]) -> None:
+            self._ledger({**event, "task": task_id} if task_id else event)
 
         while current is not None and current not in visited:
             worker = self._workers.get(current)
@@ -201,20 +205,20 @@ class WorkerGateway:
             substituted_from = requested if current != requested else None
 
             if not self._budget.check(project, worker):
-                self._ledger({"event": "deferred_budget", "worker": current,
-                              "project": project})
+                record({"event": "deferred_budget", "worker": current,
+                        "project": project})
                 return GatewayResult("deferred_budget", current, substituted_from)
 
             if self._breaker.allow(current):
                 if substituted_from is not None:
-                    self._substitute(requested, current, reason, project)
+                    self._substitute(requested, current, reason, project, record)
                 result = self._runner(worker, envelope)
                 outcome = classify(result)
                 # A rejected (quota) call consumed nothing; everything else did.
                 cost = 0.0 if outcome == "quota" else self._budget.record(project, worker)
-                self._ledger({"event": "run", "worker": current, "project": project,
-                              "outcome": outcome, "exit_code": result.exit_code,
-                              "cost": cost})
+                record({"event": "run", "worker": current, "project": project,
+                        "outcome": outcome, "exit_code": result.exit_code,
+                        "cost": cost})
                 if outcome in ("ok", "task_fail"):
                     self._breaker.record_success(current)
                     return GatewayResult(outcome, current, substituted_from,
@@ -226,16 +230,16 @@ class WorkerGateway:
 
             current = worker.get("fallback")
 
-        self._ledger({"event": "needs_owner", "worker": requested,
-                      "project": project, "reason": reason or "unavailable"})
+        record({"event": "needs_owner", "worker": requested,
+                "project": project, "reason": reason or "unavailable"})
         self._notify(
             f"Worker {requested}: no usable fallback ({reason or 'unavailable'}); "
             "owner decision required.")
         return GatewayResult("needs_owner", requested)
 
     def _substitute(self, requested: str, replacement: str, reason: str,
-                    project: str) -> None:
-        self._ledger({"event": "substitution", "from": requested,
-                      "to": replacement, "reason": reason, "project": project})
+                    project: str, record: Callable[[dict[str, Any]], None]) -> None:
+        record({"event": "substitution", "from": requested,
+                "to": replacement, "reason": reason, "project": project})
         self._notify(
             f"Worker substitution: {requested} -> {replacement} ({reason}).")
