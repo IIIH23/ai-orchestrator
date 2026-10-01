@@ -47,3 +47,4 @@ config/*
 !config/agent-registry.yaml
 !config/tool-registry.yaml
 !config/claude-review-settings.json
+!config/orchestrator.yaml

@@ -55,6 +55,8 @@ agents:
     cost_class: premium
     available: true
     healthcheck: "codex --version"
+    # The task prompt is piped on stdin ("-"); the worktree is the working directory.
+    command: ["codex", "exec", "-s", "workspace-write", "-"]
     timeout: 300
     fallback: claude_code
     allowed_actions:

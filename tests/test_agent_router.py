@@ -99,3 +99,10 @@ def test_shipped_claude_code_is_enabled_through_the_policy_adapter():
     assert agents["claude_code"]["available"] is True
     assert agents["claude_code"]["adapter"] == "tools.claude_code_adapter"
     assert "claude_code_adapter.py health" in agents["claude_code"]["healthcheck"]
+
+
+def test_shipped_codex_command_reads_the_prompt_from_stdin_in_a_sandbox():
+    agents = {agent["id"]: agent for agent in load_registry()}
+
+    assert agents["codex"]["command"] == [
+        "codex", "exec", "-s", "workspace-write", "-"]

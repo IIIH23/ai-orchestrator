@@ -1,0 +1,23 @@
+# Orchestrator daemon settings (tools/orchestrator_daemon.py).
+# State lives in ORCHESTRATOR_STATE_DIR, outside any repository.
+
+lease_seconds: 900
+poll_seconds: 10
+defer_seconds: 900
+
+breaker:
+  threshold: 3
+  cooldown_seconds: 600
+
+# Spend is counted in abstract units per worker cost_class over a rolling
+# window. A project or worker without a limit is denied, never unlimited.
+budget:
+  window_seconds: 86400
+  costs:
+    cheap: 1
+    standard: 3
+    premium: 10
+  limits:
+    "project:ai-orchestrator": 100
+    "worker:codex": 100
+    "worker:claude_code": 50
