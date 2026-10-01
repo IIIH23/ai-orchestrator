@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from typing import Any
+from typing import Any, Callable
 
 
 STAGING_USER = "deploy"
@@ -109,52 +109,51 @@ def verify_disk_usage() -> dict[str, Any]:
 
 
 def main() -> int:
-    """Run staging verification."""
+    """Run staging verification. Exit 0 only when every check is healthy."""
     print("=== Staging VPS Verification ===")
+    failures: list[str] = []
 
-    # 1. SSH
-    try:
-        if verify_ssh():
-            print(f"  SSH: OK ({STAGING_USER}@{staging_host()})")
-        else:
-            print("  SSH: FAILED (wrong user)")
-            return 1
-    except StagingVerificationError as e:
-        print(f"  SSH: {e}")
+    def check(name: str, run: Callable[[], str]) -> bool:
+        try:
+            print(f"  {name}: {run()}")
+            return True
+        except (StagingVerificationError, subprocess.TimeoutExpired, OSError) as exc:
+            print(f"  {name}: FAILED ({exc})")
+            failures.append(name)
+            return False
+
+    def ssh() -> str:
+        if not verify_ssh():
+            raise StagingVerificationError("wrong user")
+        return f"OK ({STAGING_USER}@{staging_host()})"
+
+    def docker() -> str:
+        info = verify_docker()
+        return f"{info['docker_version']}; {info['compose_version']}"
+
+    def containers() -> str:
+        running = verify_containers()
+        names = ", ".join(f"{c['name']} ({c['status']})" for c in running)
+        return f"{len(running)} running" + (f": {names}" if names else "")
+
+    def health() -> str:
+        result = verify_health_endpoint()
+        if not result["healthy"]:
+            raise StagingVerificationError(f"unhealthy: {result['response'][:100]}")
+        return "HEALTHY"
+
+    def disk() -> str:
+        return f"{verify_disk_usage()['usage_percent']} used"
+
+    # Without SSH nothing else can be checked.
+    if check("SSH", ssh):
+        for name, run in (("DOCKER", docker), ("CONTAINERS", containers),
+                          ("HEALTH", health), ("DISK", disk)):
+            check(name, run)
+
+    if failures:
+        print(f"  VERIFICATION FAILED: {', '.join(failures)}")
         return 1
-
-    # 2. Docker
-    try:
-        docker = verify_docker()
-        print(f"  DOCKER: {docker['docker_version']}")
-        print(f"  COMPOSE: {docker['compose_version']}")
-    except StagingVerificationError as e:
-        print(f"  DOCKER: {e}")
-        return 1
-
-    # 3. Containers
-    try:
-        containers = verify_containers()
-        print(f"  CONTAINERS: {len(containers)} running")
-        for c in containers:
-            print(f"    - {c['name']}: {c['status']}")
-    except StagingVerificationError as e:
-        print(f"  CONTAINERS: {e}")
-
-    # 4. Health
-    health = verify_health_endpoint()
-    status = "HEALTHY" if health["healthy"] else "UNHEALTHY"
-    print(f"  HEALTH: {status}")
-    if not health["healthy"]:
-        print(f"    Response: {health['response'][:100]}")
-
-    # 5. Disk
-    try:
-        disk = verify_disk_usage()
-        print(f"  DISK: {disk['usage_percent']} used")
-    except StagingVerificationError as e:
-        print(f"  DISK: {e}")
-
     print("  VERIFICATION PASSED")
     return 0
 
