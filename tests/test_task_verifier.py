@@ -78,6 +78,15 @@ class WorkspaceTests(RepoCase):
         with self.assertRaises(workspace.WorkspaceError):
             self.worktree()
 
+    def test_reuse_resets_leftovers_of_an_interrupted_attempt(self):
+        workdir = self.worktree()
+        (workdir / "src" / "app.py").write_text("PARTIAL = 1\n", "utf-8")
+        (workdir / "junk.txt").write_text("x", "utf-8")
+        again = workspace.prepare(self.repo, "t1", 1, self.root / "worktrees",
+                                  reuse=True)
+        self.assertEqual(again, workdir)
+        self.assertEqual(workspace.changed_paths(workdir), [])
+
     def test_commit_records_changes_on_the_task_branch(self):
         workdir = self.worktree()
         (workdir / "src" / "new.py").write_text("X = 1\n", "utf-8")
