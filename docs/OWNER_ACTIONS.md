@@ -22,7 +22,7 @@
 
 | Secret | Value | Purpose |
 | --- | --- | --- |
-| STAGING_HOST | 157.180.125.174 | Deploy SSH |
+| STAGING_HOST | 203.0.113.10 | Deploy SSH |
 | STAGING_USER | deploy | SSH user |
 | STAGING_SSH_KEY | Ed25519 private key | SSH auth |
 
@@ -39,8 +39,8 @@
 
 | # | Action | Phase | Priority |
 | --- | --- | --- | --- |
-| 10 | Create DNS A record: earthbit.staging → 157.180.125.174 | 4 | 🔴 Critical |
-| 11 | Provide Cloudflare Zone ID (terrabits.org) | 4 | 🟡 Medium |
+| 10 | Create DNS A record: earthbit.staging → 203.0.113.10 | 4 | 🔴 Critical |
+| 11 | Provide Cloudflare Zone ID (example.org) | 4 | 🟡 Medium |
 | 12 | Provide API token (Zone.DNS permissions) | 4 | 🟡 Medium |
 | 13 | After HTTPS: enable Cloudflare Proxy | 4 | 🟡 Medium |
 | 14 | Provide team emails for Access allowlist | 4 | 🟡 Medium |

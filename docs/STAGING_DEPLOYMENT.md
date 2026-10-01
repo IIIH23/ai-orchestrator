@@ -5,7 +5,7 @@
 ## Server
 
 - **Host**: hermes-staging-01
-- **IPv4**: 157.180.125.174
+- **IPv4**: 203.0.113.10
 - **OS**: Ubuntu 26.04 LTS
 - **User**: deploy (SSH key: ~/.ssh/deploy_staging_ed25519)
 

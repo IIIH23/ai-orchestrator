@@ -266,11 +266,11 @@ Registrar and DNS provider:
 
 Base domain:
 
-- terrabits.org
+- example.org
 
 Staging domain:
 
-- earthbit.staging.terrabits.org
+- app.staging.example.org
 
 Initial DNS mode:
 

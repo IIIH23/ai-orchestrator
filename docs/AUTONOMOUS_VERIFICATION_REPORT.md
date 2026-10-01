@@ -28,7 +28,7 @@ Full external verification completed for all integrations.
 
 | Check | Result |
 |-------|--------|
-| SSH connectivity | deploy@157.180.125.174 OK |
+| SSH connectivity | deploy@203.0.113.10 OK |
 | Docker | v29.6.1 running |
 | Compose | v5.2.0 available |
 | Containers | 0 running (nothing deployed) |

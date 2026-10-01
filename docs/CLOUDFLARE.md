@@ -4,8 +4,8 @@
 
 ## Domain
 
-- **Base domain**: terrabits.org
-- **Staging**: earthbit.staging.terrabits.org → 157.180.125.174
+- **Base domain**: example.org
+- **Staging**: app.staging.example.org → 203.0.113.10
 - **Registrar**: Cloudflare
 - **DNSSEC**: enabled
 
@@ -13,9 +13,9 @@
 
 | Type | Name | Content | TTL | Proxy | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| A | earthbit.staging | 157.180.125.174 | 300 | ❌ (DNS only) | Staging app |
+| A | earthbit.staging | 203.0.113.10 | 300 | ❌ (DNS only) | Staging app |
 | A | hermes | <hermes-vps-ip> | 300 | ❌ | Orchestrator |
-| CNAME | www.earthbit.staging | earthbit.staging.terrabits.org | 300 | ❌ | WWW redirect |
+| CNAME | www.earthbit.staging | app.staging.example.org | 300 | ❌ | WWW redirect |
 | MX | <base domain> | mail server | 3600 | — | Email |
 | TXT | <base domain> | v=spf1 ... | 3600 | — | SPF |
 
@@ -27,7 +27,7 @@
 ### API Token
 
 - Name: `hermes-automation`
-- Permissions: `Zone.DNS` (read/edit for terrabits.org zone only)
+- Permissions: `Zone.DNS` (read/edit for example.org zone only)
 - Do NOT store token in repo
 - Provide to orchestrator via secure channel
 
@@ -37,7 +37,7 @@
 
 | Setting | Value |
 | --- | --- |
-| Application | earthbit.staging.terrabits.org |
+| Application | app.staging.example.org |
 | Policy name | Staging Users |
 | Action | Allow |
 | Include | Team emails (comma-separated) |
@@ -58,7 +58,7 @@ resource "cloudflare_record" "staging" {
   zone_id = var.cloudflare_zone_id
   name    = "earthbit.staging"
   type    = "A"
-  value   = "157.180.125.174"
+  value   = "203.0.113.10"
   ttl     = 300
   proxied = false
 }
@@ -66,7 +66,7 @@ resource "cloudflare_record" "staging" {
 resource "cloudflare_access_application" "staging" {
   zone_id = var.cloudflare_zone_id
   name   = "Pulse of Earth Staging"
-  domain = "earthbit.staging.terrabits.org"
+  domain = "app.staging.example.org"
 }
 
 resource "cloudflare_access_policy" "staging_team" {
@@ -83,13 +83,13 @@ resource "cloudflare_access_policy" "staging_team" {
 # infrastructure/terraform/terraform.tfvars.example
 cloudflare_zone_id = "your-zone-id"
 team_emails = [
-  "team@terrabits.org",
+  "ops@example.org",
 ]
 ```
 
 ## Deployment Order
 
-1. Create DNS record (A staging → 157.180.125.174)
+1. Create DNS record (A staging → 203.0.113.10)
 2. Wait for DNS propagation (< 5 min with TTL 300)
 3. Verify HTTPS via automated test
 4. After first successful HTTPS:
@@ -108,7 +108,7 @@ team_emails = [
 
 ## Owner Actions Required
 
-1. Provide Cloudflare zone ID for terrabits.org
+1. Provide Cloudflare zone ID for example.org
 2. Provide API token with Zone.DNS permissions
 3. Provide team emails for staging Access allowlist
 4. Approve Terraform plan before apply (if self-hosted state)

@@ -3,7 +3,7 @@
 - Target: hermes-staging-01 (Ubuntu 26.04 LTS)
 - Generated: 2026-06-27
 - Commits: 628fdfe, 004abec, a8549fc, 2533b82, 2017bc957, 0dc5c47 (feature branch feat/staging-bootstrap)
-- IPv4: 157.180.125.174
+- IPv4: 203.0.113.10
 - Hostname: hermes-staging-01
 - Kernel: 7.0.0-15-generic
 - cloud-init: done (DataSourceHetzner)

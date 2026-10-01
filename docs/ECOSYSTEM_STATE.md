@@ -29,7 +29,7 @@
 
 ### Staging VPS
 - **Host:** hermes-staging-01
-- **IPv4:** 157.180.125.174
+- **IPv4:** 203.0.113.10
 - **OS:** Ubuntu 26.04 LTS
 - **Services:** Docker 29.6.1, UFW, Fail2ban, unattended-upgrades
 - **SSH:** deploy user (key-only), root disabled
