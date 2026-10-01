@@ -85,7 +85,7 @@ agents:
     risk_level: medium
     auth_method: anthropic_oauth
     cost_class: premium
-    available: false
+    available: true
     healthcheck: "python tools/claude_code_adapter.py health"
     timeout: 600
     fallback: null

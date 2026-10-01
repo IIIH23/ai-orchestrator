@@ -91,3 +91,11 @@ def test_shipped_fallback_chain_never_ends_on_the_orchestrator():
     assert agents["codex"]["fallback"] == "claude_code"
     assert agents["claude_code"]["fallback"] is None
     assert all(agent["fallback"] != "hermes" for agent in agents.values())
+
+
+def test_shipped_claude_code_is_enabled_through_the_policy_adapter():
+    agents = {agent["id"]: agent for agent in load_registry()}
+
+    assert agents["claude_code"]["available"] is True
+    assert agents["claude_code"]["adapter"] == "tools.claude_code_adapter"
+    assert "claude_code_adapter.py health" in agents["claude_code"]["healthcheck"]
