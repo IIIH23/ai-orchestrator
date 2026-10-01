@@ -11,8 +11,9 @@ from unittest import mock
 from tools import verify_staging
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CODE_DIRS = ("tools", "tests", "scripts", "config", "orchestrator_api")
-CODE_SUFFIXES = {".py", ".sh", ".yaml", ".yml", ".json"}
+TEXT_SUFFIXES = {".py", ".sh", ".yaml", ".yml", ".json", ".md", ".tf", ".txt"}
+SKIPPED_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__"}
+PRIVATE_DOMAIN = "terrabits" + ".org"
 PUBLIC_IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 ALLOWED_IPV4_PREFIXES = (
     "127.", "0.0.0.0", "10.", "192.168.",
@@ -37,18 +38,30 @@ class StagingHostConfigurationTests(unittest.TestCase):
         self.assertIn("deploy@203.0.113.10", run.call_args.args[0])
 
 
+def repository_text_files():
+    for path in sorted(REPO_ROOT.rglob("*")):
+        if SKIPPED_DIRS.intersection(path.relative_to(REPO_ROOT).parts):
+            continue
+        if path.is_file() and path.suffix in TEXT_SUFFIXES:
+            yield path, path.read_text(encoding="utf-8", errors="ignore")
+
+
 class NoHardcodedHostsTests(unittest.TestCase):
-    def test_code_contains_no_public_ip_literals(self):
+    """The repository is public: real hosts and domains do not belong in it."""
+
+    def test_repository_contains_no_public_ip_literals(self):
         offenders = []
-        for directory in CODE_DIRS:
-            for path in sorted((REPO_ROOT / directory).rglob("*")):
-                if path.suffix not in CODE_SUFFIXES or not path.is_file():
-                    continue
-                text = path.read_text(encoding="utf-8", errors="ignore")
-                for match in PUBLIC_IPV4.finditer(text):
-                    if not match.group().startswith(ALLOWED_IPV4_PREFIXES):
-                        offenders.append(
-                            f"{path.relative_to(REPO_ROOT).as_posix()}: {match.group()}")
+        for path, text in repository_text_files():
+            for match in PUBLIC_IPV4.finditer(text):
+                if not match.group().startswith(ALLOWED_IPV4_PREFIXES):
+                    offenders.append(
+                        f"{path.relative_to(REPO_ROOT).as_posix()}: {match.group()}")
+        self.assertEqual(offenders, [])
+
+    def test_repository_contains_no_private_domain(self):
+        offenders = [path.relative_to(REPO_ROOT).as_posix()
+                     for path, text in repository_text_files()
+                     if PRIVATE_DOMAIN in text]
         self.assertEqual(offenders, [])
 
 

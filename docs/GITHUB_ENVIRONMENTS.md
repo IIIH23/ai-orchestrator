@@ -9,7 +9,7 @@
 | Setting | Value |
 | --- | --- |
 | Name | staging |
-| URL | https://earthbit.staging.terrabits.org |
+| URL | https://app.staging.example.org |
 | Auto-deploy | ✅ (push to main, after CI pass) |
 | Protection | None (low-risk) |
 | Secrets | STAGING_HOST, STAGING_USER, STAGING_SSH_KEY |
@@ -27,7 +27,7 @@
 | Setting | Value |
 | --- | --- |
 | Name | production |
-| URL | https://earthbit.terrabits.org |
+| URL | https://app.example.org |
 | Auto-deploy | ❌ (manual approval required) |
 | Protection | Required reviewers, wait timer |
 | Secrets | PROD_HOST, PROD_USER, PROD_SSH_KEY, PROD_DB_PASSWORD |

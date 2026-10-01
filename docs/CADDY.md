@@ -4,16 +4,16 @@
 
 ## Staging Domain
 
-- **Domain**: earthbit.staging.terrabits.org
-- **Target**: 157.180.125.174:8080 (app)
+- **Domain**: app.staging.example.org
+- **Target**: 203.0.113.10:8080 (app)
 - **HTTPS**: Automatic via Caddy
 - **Auth**: Basic Auth (initial), Cloudflare Access (later)
 
 ## Caddyfile
 
 ```
-# Staging: earthbit.staging.terrabits.org
-earthbit.staging.terrabits.org {
+# Staging: app.staging.example.org
+app.staging.example.org {
     # Automatic HTTPS
     tls {
         protocols tls1.2 tls1.3

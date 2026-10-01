@@ -51,7 +51,7 @@ GitHub → IIIH23/earth-pulse-poc → Settings → Environments  staging → Add
 |---|-----|------------|-----|
 | 13 | Запустити CI вручну для перевірки | GitHub → Actions → CI → Run workflow | 1 хв |
 | 14 | Перевірити що staging deploy працює | GitHub → Actions → переглянути логи | 3 хв |
-| 15 | Staging відповідає через домен | httpsaging.terrabits.org/health | 30 сек |
+| 15 | Staging відповідає через домен | httpsaging.example.org/health | 30 сек |
 | 16 | Зробити скріншот/опис результату | Для мене | 1 хв |
 
 ---
@@ -80,7 +80,7 @@ GitHub → IIIH23/earth-pulse-poc → Settings → Environments  staging → Add
 1. Перейдіть до https://dash.cloudflare.com/profile/api-tokens
 2. Натисність **Create Token**
 3. Виберіть шаблон **"Edit zone DNS"** (або Custom Token):
-   - Zone Resources: **Include** → Specific zone → `terrabits.org`
+   - Zone Resources: **Include** → Specific zone → `example.org`
    - TTL: виберіть 1 рік
 4. Натисність **Continue to summary** → **Create Token**
 5. Скопіюйте та видаліть з системи фрагменти які не повинні бути публічними

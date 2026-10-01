@@ -93,7 +93,7 @@ fi
 set -euo pipefail
 
 ALERT_SCRIPT="/opt/terrabits/scripts/send-telegram-alert.sh"
-DOMAIN="earthbit.staging.terrabits.org"
+DOMAIN="app.staging.example.org"
 
 EXPIRY_DAYS=$(echo | openssl s_client -servername "$DOMAIN" -connect "$DOMAIN:443" 2>/dev/null | \
   openssl x509 -noout -enddate 2>/dev/null | \

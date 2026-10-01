@@ -550,7 +550,7 @@ Production:
 Поточний staging:
 
 * host: hermes-staging-01;
-* public IPv4: 157.180.125.174;
+* public IPv4: 203.0.113.10;
 * provider: Hetzner;
 * location: hel1;
 * OS: Ubuntu 26.04 LTS;
@@ -619,7 +619,7 @@ Secrets не комітити.
 
 Перший staging domain:
 
-* earthbit.staging.terrabits.org
+* app.staging.example.org
 
 Поки Cloudflare DNS only.
 
@@ -631,7 +631,7 @@ Secrets не комітити.
 
 Домен:
 
-* terrabits.org
+* example.org
 
 Cloudflare:
 
@@ -659,7 +659,7 @@ Cloudflare:
 
 Потрібний запис:
 
-* earthbit.staging.terrabits.org → 157.180.125.174
+* app.staging.example.org → 203.0.113.10
 
 Початково:
 
@@ -1009,7 +1009,7 @@ n8n використовувати лише там, де workflow automation в�
 
 * hel1;
 * hermes-staging-01;
-* 157.180.125.174.
+* 203.0.113.10.
 
 Private Network має з’єднати обидва сервери.
 

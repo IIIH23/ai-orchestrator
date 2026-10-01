@@ -17,7 +17,7 @@
 | Hetzner Private Network | ❌ not configured | high | owner | Needs verification |
 | Hetzner Firewall | ⚠️ unknown | high | owner | Policy says enabled; unverified |
 | Hetzner Object Storage | ❌ not configured | high | owner | For PostgreSQL backups |
-| Cloudflare DNS | ❌ not configured | high | owner | earthbit.staging.terrabits.org |
+| Cloudflare DNS | ❌ not configured | high | owner | app.staging.example.org |
 | Cloudflare Access | ❌ not configured | medium | owner | After HTTPS confirmed |
 | Cloudflare Proxy | ❌ not configured | medium | owner | After HTTPS confirmed |
 | Docker (staging) | ✅ working | high | auto | Docker 29.6.1 installed |
