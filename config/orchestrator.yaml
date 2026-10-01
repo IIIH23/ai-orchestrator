@@ -21,3 +21,11 @@ budget:
     "project:ai-orchestrator": 100
     "worker:codex": 100
     "worker:claude_code": 50
+
+# What happens to a verified task branch:
+#   none      - the commit stays local (default)
+#   draft_pr  - push task/<id>-a<n> to origin and open a draft pull request
+#   pr        - the same, as a ready pull request
+# The daemon never merges and never pushes anything but task branches.
+publish:
+  mode: none
