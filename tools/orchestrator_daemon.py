@@ -31,6 +31,7 @@ from tools.agent_router import REGISTRY_PATH, RouteDecision, load_registry  # no
 from tools.agent_runtime import resolve_route  # noqa: E402
 from tools.claude_code_adapter import run_claude  # noqa: E402
 from tools.dispatcher import Task  # noqa: E402
+from tools.gateway_state import SqliteGatewayState  # noqa: E402
 from tools.ledger import JsonlLedger  # noqa: E402
 from tools.review_gate import ReviewGateError, Verdict, run_review_gate  # noqa: E402
 from tools.task_queue import TaskQueue  # noqa: E402
@@ -112,16 +113,20 @@ class Orchestrator:
         self.queue = TaskQueue(state / "queue.sqlite3", clock=clock,
                                defer_seconds=settings.defer_seconds)
         self.ledger = JsonlLedger(state / "ledger.jsonl")
+        self.gateway_state = SqliteGatewayState(state / "gateway.sqlite3")
         self.gateway = WorkerGateway(
             registry=load_registry(registry_path), runner=runner,
             budget=Budget(settings.limits, settings.costs,
-                          window_s=settings.budget_window_seconds, clock=clock),
+                          window_s=settings.budget_window_seconds, clock=clock,
+                          state=self.gateway_state),
             breaker=CircuitBreaker(settings.breaker_threshold,
-                                   settings.breaker_cooldown_seconds, clock=clock),
+                                   settings.breaker_cooldown_seconds, clock=clock,
+                                   state=self.gateway_state),
             ledger=self.ledger, notify=self._notify)
 
     def close(self) -> None:
         self.queue.close()
+        self.gateway_state.close()
 
     def _notify(self, message: str) -> None:
         self.ledger({"event": "notify", "message": message})

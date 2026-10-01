@@ -68,19 +68,42 @@ def classify(result: RunResult) -> str:
     return "task_fail"
 
 
+class MemoryGatewayState:
+    """Breaker and spend state that lives only as long as the process."""
+
+    def __init__(self) -> None:
+        self._breakers: dict[str, tuple[int, float | None]] = {}
+        self._spend: dict[str, list[tuple[float, float]]] = {}
+
+    def breaker(self, worker_id: str) -> tuple[int, float | None]:
+        return self._breakers.get(worker_id, (0, None))
+
+    def set_breaker(self, worker_id: str, failures: int,
+                    opened_at: float | None) -> None:
+        self._breakers[worker_id] = (failures, opened_at)
+
+    def clear_breaker(self, worker_id: str) -> None:
+        self._breakers.pop(worker_id, None)
+
+    def add_spend(self, scope: str, at: float, amount: float) -> None:
+        self._spend.setdefault(scope, []).append((at, amount))
+
+    def spent_since(self, scope: str, cutoff: float) -> float:
+        return sum(amount for at, amount in self._spend.get(scope, []) if at > cutoff)
+
+
 class CircuitBreaker:
     """Per-worker breaker: closed -> open after N failures -> half_open."""
 
     def __init__(self, threshold: int = 3, cooldown_s: float = 600,
-                 clock: Clock = time.monotonic) -> None:
+                 clock: Clock = time.monotonic, state: Any = None) -> None:
         self._threshold = threshold
         self._cooldown_s = cooldown_s
         self._clock = clock
-        self._failures: dict[str, int] = {}
-        self._opened_at: dict[str, float] = {}
+        self._state = state if state is not None else MemoryGatewayState()
 
     def state(self, worker_id: str) -> str:
-        opened_at = self._opened_at.get(worker_id)
+        _, opened_at = self._state.breaker(worker_id)
         if opened_at is None:
             return "closed"
         if self._clock() - opened_at >= self._cooldown_s:
@@ -91,16 +114,17 @@ class CircuitBreaker:
         return self.state(worker_id) != "open"
 
     def record_success(self, worker_id: str) -> None:
-        self._failures.pop(worker_id, None)
-        self._opened_at.pop(worker_id, None)
+        self._state.clear_breaker(worker_id)
 
     def record_failure(self, worker_id: str) -> None:
+        failures, opened_at = self._state.breaker(worker_id)
         if self.state(worker_id) == "half_open":
-            self._opened_at[worker_id] = self._clock()
+            self._state.set_breaker(worker_id, failures, self._clock())
             return
-        self._failures[worker_id] = self._failures.get(worker_id, 0) + 1
-        if self._failures[worker_id] >= self._threshold:
-            self._opened_at[worker_id] = self._clock()
+        failures += 1
+        if failures >= self._threshold:
+            opened_at = self._clock()
+        self._state.set_breaker(worker_id, failures, opened_at)
 
 
 class Budget:
@@ -111,21 +135,19 @@ class Budget:
     """
 
     def __init__(self, limits: Mapping[str, float], costs: Mapping[str, float],
-                 window_s: float = 86400, clock: Clock = time.monotonic) -> None:
+                 window_s: float = 86400, clock: Clock = time.monotonic,
+                 state: Any = None) -> None:
         self._limits = dict(limits)
         self._costs = dict(costs)
         self._window_s = window_s
         self._clock = clock
-        self._spend: dict[str, list[tuple[float, float]]] = {}
+        self._state = state if state is not None else MemoryGatewayState()
 
     def _cost(self, worker: Worker) -> float | None:
         return self._costs.get(str(worker.get("cost_class")))
 
     def _spent(self, scope: str) -> float:
-        cutoff = self._clock() - self._window_s
-        entries = [entry for entry in self._spend.get(scope, []) if entry[0] > cutoff]
-        self._spend[scope] = entries
-        return sum(amount for _, amount in entries)
+        return float(self._state.spent_since(scope, self._clock() - self._window_s))
 
     @staticmethod
     def _scopes(project: str, worker: Worker) -> tuple[str, str]:
@@ -145,7 +167,7 @@ class Budget:
         cost = self._cost(worker) or 0.0
         now = self._clock()
         for scope in self._scopes(project, worker):
-            self._spend.setdefault(scope, []).append((now, cost))
+            self._state.add_spend(scope, now, cost)
         return cost
 
 

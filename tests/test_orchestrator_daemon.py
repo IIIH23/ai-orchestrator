@@ -217,6 +217,19 @@ class OwnerAndReviewTests(EndToEndCase):
         self.assertEqual(self.events(orchestrator, "commit"), [])
 
 
+class RestartTests(EndToEndCase):
+    def test_spent_budget_is_remembered_after_a_restart(self):
+        limits = {**LIMITS, "worker:codex": 10}
+        first = self.build(limits=limits)
+        first.queue.enqueue(self.spec())
+        self.assertEqual(first.tick(), "done")
+        first.close()
+
+        second = self.build(limits=limits)
+        second.queue.enqueue(self.spec(id="t2"))
+        self.assertEqual(second.tick(), "deferred")
+
+
 class ConfigurationTests(unittest.TestCase):
     def test_state_dir_is_required(self):
         with self.assertRaises(daemon.ConfigurationError):
