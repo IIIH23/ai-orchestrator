@@ -56,7 +56,7 @@ agents:
     available: true
     healthcheck: "codex --version"
     timeout: 300
-    fallback: hermes
+    fallback: claude_code
     allowed_actions:
       - code_editing
       - file_creation
