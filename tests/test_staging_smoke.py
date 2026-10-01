@@ -5,7 +5,7 @@ import subprocess
 import unittest
 
 
-HOST = "157.180.125.174"
+HOST = os.environ.get("STAGING_HOST", "")
 USERNAME = "deploy"
 KEY_PATH = os.path.expanduser("~/.ssh/deploy_staging_ed25519")
 COMMAND_TIMEOUT_SECONDS = 30
@@ -38,6 +38,8 @@ class StagingSmokeTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        if not HOST:
+            raise unittest.SkipTest("STAGING_HOST is not set")
         # Test SSH connectivity
         code, out, err = run_ssh_command("echo connectivity_test")
         if code != 0:

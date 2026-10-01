@@ -18,7 +18,6 @@ import sys
 from typing import Any
 
 
-STAGING_HOST = "157.180.125.174"
 STAGING_USER = "deploy"
 SSH_KEY = os.path.expanduser("~/.ssh/deploy_staging_ed25519")
 
@@ -27,8 +26,17 @@ class StagingVerificationError(RuntimeError):
     """Raised when staging verification fails."""
 
 
+def staging_host() -> str:
+    """Return the staging host from STAGING_HOST; fail closed when unset."""
+    host = os.environ.get("STAGING_HOST", "").strip()
+    if not host:
+        raise StagingVerificationError("STAGING_HOST is not set")
+    return host
+
+
 def _ssh(command: str, timeout: int = 15) -> tuple[int, str, str]:
     """Run command on staging via SSH."""
+    host = staging_host()
     result = subprocess.run(
         [
             "ssh",
@@ -36,7 +44,7 @@ def _ssh(command: str, timeout: int = 15) -> tuple[int, str, str]:
             "-o", "StrictHostKeyChecking=no",
             "-o", "ConnectTimeout=5",
             "-o", "BatchMode=yes",
-            f"{STAGING_USER}@{STAGING_HOST}",
+            f"{STAGING_USER}@{host}",
             command,
         ],
         capture_output=True,
@@ -107,7 +115,7 @@ def main() -> int:
     # 1. SSH
     try:
         if verify_ssh():
-            print(f"  SSH: OK ({STAGING_USER}@{STAGING_HOST})")
+            print(f"  SSH: OK ({STAGING_USER}@{staging_host()})")
         else:
             print("  SSH: FAILED (wrong user)")
             return 1

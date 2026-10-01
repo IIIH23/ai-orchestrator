@@ -6,8 +6,8 @@ zone_id = os.environ['CF_ZONE_ID']
 url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
 data = json.dumps({
     "type": "A",
-    "name": "earthbit.staging",
-    "content": "157.180.125.174",
+    "name": os.environ['DNS_RECORD_NAME'],
+    "content": os.environ['STAGING_HOST'],
     "ttl": 300,
     "proxied": False,
 }).encode()

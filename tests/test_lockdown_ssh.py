@@ -5,7 +5,7 @@ import subprocess
 import unittest
 
 
-HOST = "157.180.125.174"
+HOST = os.environ.get("STAGING_HOST", "")
 ROOT_KEY_PATH = os.path.expanduser("~/.ssh/staging_admin_ed25519")
 DEPLOY_KEY_PATH = os.path.expanduser("~/.ssh/deploy_staging_ed25519")
 COMMAND_TIMEOUT_SECONDS = 30
@@ -38,6 +38,8 @@ class RootSessionLockdownTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        if not HOST:
+            raise unittest.SkipTest("STAGING_HOST is not set")
         if not os.path.isfile(ROOT_KEY_PATH):
             raise unittest.SkipTest(f"root SSH key is missing: {ROOT_KEY_PATH}")
         code, out, err = run_ssh_command("echo connectivity_test", "root", ROOT_KEY_PATH)
@@ -80,6 +82,8 @@ class DeploySessionLockdownTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        if not HOST:
+            raise unittest.SkipTest("STAGING_HOST is not set")
         if not os.path.isfile(DEPLOY_KEY_PATH):
             raise unittest.SkipTest(f"deploy SSH key is missing: {DEPLOY_KEY_PATH}")
         code, out, err = run_ssh_command("echo connectivity_test", "deploy", DEPLOY_KEY_PATH)
