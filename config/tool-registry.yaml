@@ -74,7 +74,7 @@ tools:
     write_access: true
     secret_access: true
     risk_level: medium
-    healthcheck: "ssh -o ConnectTimeout=5 deploy@157.180.125.174 whoami"
+    healthcheck: "ssh -o ConnectTimeout=5 deploy@${STAGING_HOST} whoami"
     fallback: null
 
   - id: git_local

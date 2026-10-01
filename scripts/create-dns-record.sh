@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Create Cloudflare A record via API
-# Requires: CF_API_TOKEN, CF_ZONE_ID env vars
+# Requires: CF_API_TOKEN, CF_ZONE_ID env vars; args: <domain> <ip>
 set -euo pipefail
 
 : "${CF_API_TOKEN:?Usage: CF_API_TOKEN=xxx CF_ZONE_ID=xxx bash scripts/create-dns-record.sh}"
 : "${CF_ZONE_ID:?Usage: CF_API_TOKEN=xxx CF_ZONE_ID=xxx bash scripts/create-dns-record.sh}"
 
-DOMAIN="${1:-earthbit.staging.terrabits.org}"
-IP="${2:-157.180.125.174}"
+DOMAIN="${1:?Usage: bash scripts/create-dns-record.sh <domain> <ip>}"
+IP="${2:?Usage: bash scripts/create-dns-record.sh <domain> <ip>}"
 
 echo "Creating DNS record: $DOMAIN → $IP"
 
