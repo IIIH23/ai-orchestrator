@@ -26,7 +26,7 @@ import yaml
 if __package__ in {None, ""}:
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from tools import dispatcher, task_verifier, workspace  # noqa: E402
+from tools import dispatcher, publisher, task_verifier, workspace  # noqa: E402
 from tools.agent_router import REGISTRY_PATH, RouteDecision, load_registry  # noqa: E402
 from tools.agent_runtime import resolve_route  # noqa: E402
 from tools.claude_code_adapter import run_claude  # noqa: E402
@@ -58,6 +58,10 @@ class Settings:
     budget_window_seconds: float = 86400
     costs: Mapping[str, float] = dataclasses.field(default_factory=dict)
     limits: Mapping[str, float] = dataclasses.field(default_factory=dict)
+    publish_mode: str = "none"
+
+
+PUBLISH_MODES = ("none", "draft_pr", "pr")
 
 
 def load_settings(path: pathlib.Path = CONFIG_PATH,
@@ -69,6 +73,10 @@ def load_settings(path: pathlib.Path = CONFIG_PATH,
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     breaker = payload.get("breaker") or {}
     budget = payload.get("budget") or {}
+    publish_mode = str((payload.get("publish") or {}).get("mode", "none"))
+    if publish_mode not in PUBLISH_MODES:
+        raise ConfigurationError(
+            f"publish.mode must be one of {', '.join(PUBLISH_MODES)}")
     return Settings(
         state_dir=pathlib.Path(state_dir),
         lease_seconds=int(payload.get("lease_seconds", 900)),
@@ -79,6 +87,7 @@ def load_settings(path: pathlib.Path = CONFIG_PATH,
         budget_window_seconds=float(budget.get("window_seconds", 86400)),
         costs=dict(budget.get("costs") or {}),
         limits=dict(budget.get("limits") or {}),
+        publish_mode=publish_mode,
     )
 
 
@@ -101,8 +110,11 @@ class Orchestrator:
                  reviewer: Callable[..., Any] = run_claude,
                  health_runner: Callable[..., Any] = subprocess.run,
                  notifier: Callable[[str], None] | None = None,
-                 clock: Callable[[], float] = time.time) -> None:
+                 clock: Callable[[], float] = time.time,
+                 publish_runner: Callable[..., Any] = subprocess.run) -> None:
         self.settings = settings
+        self._publish_runner = publish_runner
+        self._verified: dict[str, dict[str, Any]] = {}
         self._registry_path = registry_path
         self._reviewer = reviewer
         self._health_runner = health_runner
@@ -197,16 +209,58 @@ class Orchestrator:
                 workdir, f"task {task.id}: {str(task.envelope.get('goal', ''))[:60]}")
         except workspace.WorkspaceError as exc:
             return TaskVerdict(False, f"commit_failed: {str(exc)[:200]}")
-        self.ledger({"event": "commit", "task": task.id, "sha": sha,
-                     "branch": f"task/{task.id}-a{task.attempt}"})
+        branch = f"task/{task.id}-a{task.attempt}"
+        self.ledger({"event": "commit", "task": task.id, "sha": sha, "branch": branch})
+        self._verified[task.id] = {
+            "branch": branch, "sha": sha, "reason": verdict.reason,
+            "worker": getattr(result, "worker_id", None),
+            "substituted_from": getattr(result, "substituted_from", None),
+            "reviewed": bool(route.reviewers)}
         return verdict
+
+    def _pull_request_body(self, task: Task, info: Mapping[str, Any]) -> str:
+        worker = str(info["worker"])
+        if info["substituted_from"]:
+            worker += f" (substituted for {info['substituted_from']})"
+        test_command = " ".join(task.envelope.get("test_command") or [])
+        return "\n".join([
+            f"## Task `{task.id}`",
+            str(task.envelope.get("goal", "")),
+            "",
+            "## Evidence",
+            f"- worker: {worker}",
+            f"- verifier: {info['reason']} (`{test_command}`)",
+            f"- allowed paths: {', '.join(task.allowed_paths)}",
+            f"- independent review: {'approved' if info['reviewed'] else 'not required'}",
+            f"- commit: {info['sha']}, attempt {task.attempt}",
+            "",
+            "Opened by the orchestrator after verification. It is not merged "
+            "automatically.",
+        ])
+
+    def _sync(self, task: Task, outcome: str) -> None:
+        """Publish a verified task. Linear and Obsidian sync is not wired yet."""
+        info = self._verified.pop(task.id, None)
+        if outcome != "done" or info is None or self.settings.publish_mode == "none":
+            return
+        try:
+            url = publisher.publish(
+                task.envelope["workdir"], info["branch"],
+                title=f"task {task.id}: {str(task.envelope.get('goal', ''))[:60]}",
+                body=self._pull_request_body(task, info),
+                draft=self.settings.publish_mode == "draft_pr",
+                run=self._publish_runner)
+        except publisher.PublishError as exc:
+            self._notify(f"Task {task.id} is verified and committed on "
+                         f"{info['branch']}, but publishing failed: {str(exc)[:200]}")
+            raise
+        self.ledger({"event": "published", "task": task.id, "url": url,
+                     "branch": info["branch"]})
 
     def tick(self) -> str:
         return dispatcher.tick(
             queue=self.queue, route=self._route, gateway=self.gateway,
-            verify=self._verify, ledger=self.ledger,
-            # Linear and Obsidian status sync is not wired yet.
-            sync=lambda task, outcome: None,
+            verify=self._verify, ledger=self.ledger, sync=self._sync,
             repo_is_clean=workspace.repo_is_clean,
             lease_seconds=self.settings.lease_seconds, prepare=self._prepare)
 

@@ -63,7 +63,8 @@ class EndToEndCase(unittest.TestCase):
         path.write_text(WORKERS[name], "utf-8")
         return [sys.executable, str(path)]
 
-    def build(self, *, codex="ok", claude="ok", limits=None, review="approve"):
+    def build(self, *, codex="ok", claude="ok", limits=None, review="approve",
+              publish_mode="none", publish_runner=subprocess.run):
         registry = self.root / "agents.yaml"
         registry.write_text(yaml.safe_dump({"agents": [
             {"id": "codex", "available": True, "cost_class": "premium",
@@ -75,7 +76,8 @@ class EndToEndCase(unittest.TestCase):
         ]}), "utf-8")
         settings = daemon.Settings(
             state_dir=self.root / "state", defer_seconds=600,
-            costs={"premium": 10}, limits=limits or LIMITS)
+            costs={"premium": 10}, limits=limits or LIMITS,
+            publish_mode=publish_mode)
 
         def reviewer(request):
             self.reviews.append(request)
@@ -86,7 +88,8 @@ class EndToEndCase(unittest.TestCase):
 
         orchestrator = daemon.Orchestrator(
             settings, registry_path=registry, reviewer=reviewer,
-            notifier=self.notes.append, clock=self.clock)
+            notifier=self.notes.append, clock=self.clock,
+            publish_runner=publish_runner)
         self.addCleanup(orchestrator.close)
         return orchestrator
 
@@ -217,6 +220,81 @@ class OwnerAndReviewTests(EndToEndCase):
         self.assertEqual(self.events(orchestrator, "commit"), [])
 
 
+class FakeGh:
+    """Runs git for real and stands in for the gh CLI."""
+
+    def __init__(self, returncode=0):
+        self.calls = []
+        self._returncode = returncode
+
+    def __call__(self, command, **kwargs):
+        if command[0] != "gh":
+            return subprocess.run(command, **kwargs)
+        self.calls.append(command)
+        return subprocess.CompletedProcess(
+            command, self._returncode,
+            "https://github.com/example/demo/pull/7" if not self._returncode else "",
+            "not authorized" if self._returncode else "")
+
+
+class PublishTests(EndToEndCase):
+    def setUp(self):
+        super().setUp()
+        self.origin = self.root / "origin.git"
+        git(self.root, "init", "-q", "--bare", "-b", "main", str(self.origin))
+        git(self.repo, "remote", "add", "origin", str(self.origin))
+        git(self.repo, "push", "-q", "origin", "main")
+
+    def test_publishing_is_off_by_default(self):
+        gh = FakeGh()
+        orchestrator = self.build(publish_runner=gh)
+        orchestrator.queue.enqueue(self.spec())
+        self.assertEqual(orchestrator.tick(), "done")
+        self.assertEqual(gh.calls, [])
+        self.assertNotIn("task/t1-a1", git(self.origin, "branch", "--list"))
+
+    def test_verified_task_is_pushed_and_opened_as_a_draft_pr(self):
+        gh = FakeGh()
+        orchestrator = self.build(publish_mode="draft_pr", publish_runner=gh)
+        orchestrator.queue.enqueue(self.spec())
+
+        self.assertEqual(orchestrator.tick(), "done")
+
+        self.assertIn("task/t1-a1", git(self.origin, "branch", "--list"))
+        self.assertEqual(
+            git(self.origin, "show", "main:src/app.py").strip(), "VALUE = 1")
+        published = self.events(orchestrator, "published")[0]
+        self.assertEqual(published["url"], "https://github.com/example/demo/pull/7")
+        command = gh.calls[0]
+        self.assertIn("--draft", command)
+        body = command[command.index("--body") + 1]
+        for expected in ("Bump VALUE", "tests_passed", "codex", "src/"):
+            self.assertIn(expected, body)
+
+    def test_failed_task_is_never_published(self):
+        gh = FakeGh()
+        orchestrator = self.build(codex="out_of_scope", publish_mode="draft_pr",
+                                  publish_runner=gh)
+        orchestrator.queue.enqueue(self.spec(max_attempts=1))
+        self.assertEqual(orchestrator.tick(), "failed")
+        self.assertEqual(gh.calls, [])
+        self.assertNotIn("task/t1-a1", git(self.origin, "branch", "--list"))
+
+    def test_publish_failure_keeps_the_result_and_tells_the_owner(self):
+        orchestrator = self.build(publish_mode="draft_pr",
+                                  publish_runner=FakeGh(returncode=1))
+        orchestrator.queue.enqueue(self.spec())
+
+        self.assertEqual(orchestrator.tick(), "done")
+
+        self.assertEqual(orchestrator.queue.status("t1"), ("done", None))
+        self.assertEqual(len(self.events(orchestrator, "commit")), 1)
+        self.assertEqual(len(self.events(orchestrator, "sync_error")), 1)
+        self.assertEqual(self.events(orchestrator, "published"), [])
+        self.assertEqual(len(self.notes), 1)
+        self.assertIn("t1", self.notes[0])
+
+
 class RestartTests(EndToEndCase):
     def test_spent_budget_is_remembered_after_a_restart(self):
         limits = {**LIMITS, "worker:codex": 10}
@@ -234,6 +312,19 @@ class ConfigurationTests(unittest.TestCase):
     def test_state_dir_is_required(self):
         with self.assertRaises(daemon.ConfigurationError):
             daemon.load_settings(environ={})
+
+    def test_shipped_settings_keep_publishing_off(self):
+        settings = daemon.load_settings(
+            environ={daemon.STATE_DIR_ENV: "/var/lib/orchestrator"})
+        self.assertEqual(settings.publish_mode, "none")
+
+    def test_unknown_publish_mode_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "orchestrator.yaml"
+            path.write_text(yaml.safe_dump({"publish": {"mode": "auto_merge"}}),
+                            "utf-8")
+            with self.assertRaises(daemon.ConfigurationError):
+                daemon.load_settings(path, environ={daemon.STATE_DIR_ENV: tmp})
 
     def test_shipped_settings_load(self):
         settings = daemon.load_settings(
