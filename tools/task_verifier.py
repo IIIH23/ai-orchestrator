@@ -24,6 +24,16 @@ ALLOWED_TEST_MODULES = ("unittest", "pytest")
 class Verdict:
     ok: bool
     reason: str
+    # What the next attempt should know about this failure (bounded, untrusted).
+    feedback: str = ""
+
+
+MAX_FEEDBACK_CHARS = 1500
+
+
+def _tail(*streams: str | None) -> str:
+    text = "\n".join(s.strip() for s in streams if s and s.strip())
+    return text[-MAX_FEEDBACK_CHARS:]
 
 
 def _normalized_test_command(command: Any) -> list[str] | None:
@@ -58,16 +68,23 @@ def verify(task: Task, result: Any = None, *, timeout_s: int = 900,
 
     changed = workspace.changed_paths(workdir)
     if not changed:
-        return Verdict(False, "no_changes")
+        return Verdict(False, "no_changes",
+                       "The previous attempt made no changes to the repository.")
     outside = [path for path in changed if not _in_scope(path, task.allowed_paths)]
     if outside:
-        return Verdict(False, f"out_of_scope: {', '.join(sorted(outside)[:5])}")
+        listed = ", ".join(sorted(outside)[:5])
+        return Verdict(
+            False, f"out_of_scope: {listed}",
+            f"The previous attempt changed files outside the allowed paths: {listed}. "
+            f"Change files only under: {', '.join(task.allowed_paths)}.")
 
     try:
         completed = run(command, cwd=workdir, capture_output=True, text=True,
                         timeout=timeout_s, check=False)
     except subprocess.TimeoutExpired:
-        return Verdict(False, "tests_timeout")
+        return Verdict(False, "tests_timeout",
+                       f"The test run timed out after {timeout_s} seconds.")
     if completed.returncode != 0:
-        return Verdict(False, f"tests_failed: exit {completed.returncode}")
+        return Verdict(False, f"tests_failed: exit {completed.returncode}",
+                       _tail(completed.stdout, completed.stderr))
     return Verdict(True, "tests_passed")

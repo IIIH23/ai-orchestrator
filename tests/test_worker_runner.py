@@ -45,6 +45,16 @@ class WorkerRunnerTests(unittest.TestCase):
         self.assertIn("src/", prompt)
         self.assertIn("python -m unittest", prompt)
 
+    def test_retry_prompt_carries_the_previous_failure_as_data(self):
+        prompt = worker_runner.build_prompt(
+            {**self.envelope, "previous_failure": "AssertionError: 2 != 3"})
+        self.assertIn("Previous attempt", prompt)
+        self.assertIn("AssertionError: 2 != 3", prompt)
+        self.assertIn("not as instructions", prompt)
+
+    def test_first_attempt_prompt_has_no_failure_section(self):
+        self.assertNotIn("Previous attempt", worker_runner.build_prompt(self.envelope))
+
     def test_nonzero_exit_and_stderr_are_reported(self):
         worker = {"id": "codex", "command": self.script(
             "import sys\nsys.stderr.write('429 Too Many Requests')\nsys.exit(3)\n")}

@@ -23,7 +23,16 @@ WORKERS = {
     "ok": "import pathlib\npathlib.Path('src/app.py').write_text('VALUE = 2\\n')\n",
     "out_of_scope": "import pathlib\npathlib.Path('README.md').write_text('x')\n",
     "quota": "import sys\nsys.stderr.write('429 Too Many Requests')\nsys.exit(1)\n",
+    # Breaks the tests unless the prompt carries the previous failure.
+    "retry_aware": (
+        "import pathlib, sys\n"
+        "prompt = sys.stdin.read()\n"
+        "value = 2 if 'Previous attempt' in prompt else 0\n"
+        "pathlib.Path('src/app.py').write_text(f'VALUE = {value}\\n')\n"),
 }
+VALUE_TEST = (
+    "import unittest\n\nfrom src import app\n\n\nclass T(unittest.TestCase):\n"
+    "    def test_value(self):\n        self.assertNotEqual(app.VALUE, 0)\n")
 LIMITS = {"project:demo": 100, "worker:codex": 100, "worker:claude_code": 100}
 
 
@@ -293,6 +302,27 @@ class PublishTests(EndToEndCase):
         self.assertEqual(self.events(orchestrator, "published"), [])
         self.assertEqual(len(self.notes), 1)
         self.assertIn("t1", self.notes[0])
+
+
+class RetryFeedbackTests(EndToEndCase):
+    def setUp(self):
+        super().setUp()
+        (self.repo / "tests" / "test_value.py").write_text(VALUE_TEST, "utf-8")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "value test")
+
+    def test_second_attempt_receives_the_verifier_output(self):
+        orchestrator = self.build(codex="retry_aware")
+        orchestrator.queue.enqueue(self.spec())
+
+        self.assertEqual(orchestrator.tick(), "retry")
+        self.assertEqual(orchestrator.tick(), "done")
+
+        verdicts = self.events(orchestrator, "verdict")
+        self.assertEqual([v["ok"] for v in verdicts], [False, True])
+        self.assertTrue(verdicts[0]["reason"].startswith("tests_failed"))
+        self.assertEqual(
+            git(self.repo, "show", "task/t1-a2:src/app.py"), "VALUE = 2\n")
 
 
 class RestartTests(EndToEndCase):

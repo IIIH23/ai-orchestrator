@@ -168,6 +168,8 @@ class Orchestrator:
         task.envelope = {**task.envelope, "workdir": str(workdir),
                          "allowed_paths": list(task.allowed_paths),
                          "task_id": task.id}
+        if task.last_failure:
+            task.envelope["previous_failure"] = task.last_failure
         return task
 
     def _review(self, task: Task, route: RouteDecision,

@@ -30,6 +30,7 @@ class Task:
     max_attempts: int = 2
     requires_owner_approval: bool = False
     approved: bool = False
+    last_failure: str | None = None  # feedback from the previous attempt
 
 
 class Queue(Protocol):
@@ -38,7 +39,8 @@ class Queue(Protocol):
     def claim_next(self, lease_seconds: int) -> Task | None: ...
     def complete(self, task: Task, reason: str | None = None) -> None: ...
     def defer(self, task: Task, reason: str | None = None) -> None: ...
-    def retry(self, task: Task, reason: str | None = None) -> None: ...
+    def retry(self, task: Task, reason: str | None = None,
+              feedback: str | None = None) -> None: ...
     def fail(self, task: Task, reason: str | None = None) -> None: ...
     def needs_owner(self, task: Task, reason: str | None = None) -> None: ...
 
@@ -101,9 +103,11 @@ def tick(*, queue: Queue, route: Callable[[Task], str], gateway: Any,
         _sync_safely(sync, ledger, task, "needs_owner")
         return "needs_owner"
 
+    feedback: str | None = None
     try:
         verdict = verify(task, result)
         ok, reason = bool(verdict.ok), getattr(verdict, "reason", None)
+        feedback = getattr(verdict, "feedback", None) or None
     except Exception as exc:  # noqa: BLE001 - a crashed verifier is never a pass
         ledger({"event": "verifier_error", "task": task.id,
                 "error": str(exc)[:500]})
@@ -120,7 +124,7 @@ def tick(*, queue: Queue, route: Callable[[Task], str], gateway: Any,
         return "done"
 
     if task.attempt < task.max_attempts:
-        queue.retry(task, reason)
+        queue.retry(task, reason, feedback)
         return "retry"
 
     queue.fail(task, reason)

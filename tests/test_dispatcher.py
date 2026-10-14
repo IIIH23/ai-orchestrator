@@ -28,6 +28,7 @@ class FakeQueue:
     def __init__(self, task=None):
         self.task = task
         self.calls = []
+        self.feedback = None
 
     def claim_next(self, lease_seconds):
         self.calls.append(("claim_next", lease_seconds))
@@ -40,8 +41,12 @@ class FakeQueue:
 
     complete = _record("complete")
     defer = _record("defer")
-    retry = _record("retry")
     fail = _record("fail")
+
+    def retry(self, task, reason=None, feedback=None):
+        self.calls.append(("retry", task.id, reason))
+        self.feedback = feedback
+
     needs_owner = _record("needs_owner")
 
     def transitions(self):
@@ -50,7 +55,9 @@ class FakeQueue:
 
 class Harness:
     def __init__(self, task=None, *, gateway_status="ok", verdict_ok=True,
-                 clean=True, verifier_raises=False, sync_raises=False):
+                 clean=True, verifier_raises=False, sync_raises=False,
+                 verdict_feedback=None):
+        self._feedback = verdict_feedback
         self.queue = FakeQueue(task)
         self.ledger = []
         self.gateway_calls = []
@@ -74,7 +81,8 @@ class Harness:
         self.verifier_calls.append(task.id)
         if self._verifier_raises:
             raise RuntimeError("verifier crashed")
-        return SimpleNamespace(ok=self._verdict_ok, reason="tests")
+        return SimpleNamespace(ok=self._verdict_ok, reason="tests",
+                               feedback=self._feedback)
 
     def _sync(self, task, outcome):
         self.sync_calls.append((task.id, outcome))
@@ -175,6 +183,24 @@ class DispatcherTickTests(unittest.TestCase):
             order.append("queue"), original(task, reason))
         h.tick()
         self.assertEqual(order[:2], ["ledger", "queue"])
+
+
+class DispatcherRetryFeedbackTests(unittest.TestCase):
+    def test_retry_passes_the_verifier_feedback_to_the_queue(self):
+        h = Harness(make_task(attempt=1, max_attempts=2), verdict_ok=False,
+                    verdict_feedback="AssertionError: 2 != 3")
+        self.assertEqual(h.tick(), "retry")
+        self.assertEqual(h.queue.feedback, "AssertionError: 2 != 3")
+
+    def test_retry_without_feedback_passes_none(self):
+        h = Harness(make_task(attempt=1, max_attempts=2), verdict_ok=False)
+        self.assertEqual(h.tick(), "retry")
+        self.assertIsNone(h.queue.feedback)
+
+    def test_a_crashed_verifier_retries_without_feedback(self):
+        h = Harness(make_task(), verifier_raises=True)
+        self.assertEqual(h.tick(), "retry")
+        self.assertIsNone(h.queue.feedback)
 
 
 class DispatcherPrepareTests(unittest.TestCase):
