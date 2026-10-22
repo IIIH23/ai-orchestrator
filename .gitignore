@@ -48,3 +48,6 @@ config/*
 !config/tool-registry.yaml
 !config/claude-review-settings.json
 !config/orchestrator.yaml
+
+# Claude Code per-user permissions (must never reach task worktrees)
+.claude/settings.local.json
