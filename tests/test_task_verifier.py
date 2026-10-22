@@ -138,6 +138,42 @@ class VerifierTests(RepoCase):
         self.assertFalse(verdict.ok)
         self.assertTrue(verdict.reason.startswith("tests_failed"))
 
+    def test_failing_tests_return_the_output_tail_as_feedback(self):
+        workdir = self.worktree()
+        self.change(workdir)
+        self.change(workdir, "tests/test_sample.py", FAILING_TEST)
+        verdict = task_verifier.verify(
+            self.task(workdir, allowed_paths=["src/", "tests/"]))
+        self.assertIn("AssertionError", verdict.feedback)
+        self.assertLessEqual(len(verdict.feedback), 1600)
+
+    def test_feedback_keeps_the_end_of_long_output(self):
+        workdir = self.worktree()
+        self.change(workdir)
+
+        def run(*args, **kwargs):
+            return subprocess.CompletedProcess(
+                args, 1, "head-" + "x" * 5000 + "-the-end", "")
+
+        verdict = task_verifier.verify(self.task(workdir), run=run)
+        self.assertTrue(verdict.feedback.endswith("-the-end"))
+        self.assertNotIn("head-", verdict.feedback)
+
+    def test_scope_and_no_change_failures_explain_what_to_fix(self):
+        workdir = self.worktree()
+        empty = task_verifier.verify(self.task(workdir))
+        self.assertIn("no changes", empty.feedback.lower())
+
+        self.change(workdir, "README.md", "x")
+        outside = task_verifier.verify(self.task(workdir))
+        self.assertIn("README.md", outside.feedback)
+        self.assertIn("src/", outside.feedback)
+
+    def test_passing_verdict_has_no_feedback(self):
+        workdir = self.worktree()
+        self.change(workdir)
+        self.assertEqual(task_verifier.verify(self.task(workdir)).feedback, "")
+
     def test_missing_configuration_fails_closed(self):
         workdir = self.worktree()
         self.change(workdir)

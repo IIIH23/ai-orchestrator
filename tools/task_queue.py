@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     approved INTEGER NOT NULL,
     status TEXT NOT NULL,
     reason TEXT,
+    last_failure TEXT,
     lease_expires REAL,
     not_before REAL NOT NULL,
     created_at REAL NOT NULL,
@@ -40,6 +41,8 @@ CREATE INDEX IF NOT EXISTS tasks_claim ON tasks (status, created_at);
 
 _FIELDS = ("id, project, task_type, risk_level, envelope, allowed_paths, repo, "
            "attempt, max_attempts, requires_owner_approval, approved")
+_SELECT = _FIELDS + ", last_failure"
+MAX_FEEDBACK_CHARS = 2000
 
 
 class TaskQueue:
@@ -54,6 +57,10 @@ class TaskQueue:
         self._db.execute("PRAGMA journal_mode=WAL")
         self._db.execute("PRAGMA busy_timeout=5000")
         self._db.executescript(_SCHEMA)
+        # Databases created before the column existed are upgraded in place.
+        columns = {row[1] for row in self._db.execute("PRAGMA table_info(tasks)")}
+        if "last_failure" not in columns:
+            self._db.execute("ALTER TABLE tasks ADD COLUMN last_failure TEXT")
 
     def close(self) -> None:
         self._db.close()
@@ -75,7 +82,7 @@ class TaskQueue:
         self._db.execute("BEGIN IMMEDIATE")
         try:
             row = self._db.execute(
-                f"SELECT {_FIELDS} FROM tasks WHERE "
+                f"SELECT {_SELECT} FROM tasks WHERE "
                 "(status = 'queued' AND not_before <= ?) OR "
                 "(status = 'running' AND lease_expires <= ?) "
                 "ORDER BY created_at, id LIMIT 1", (now, now)).fetchone()
@@ -108,8 +115,12 @@ class TaskQueue:
     def needs_owner(self, task: Task, reason: str | None = None) -> None:
         self._transition(task, "needs_owner", reason)
 
-    def retry(self, task: Task, reason: str | None = None) -> None:
-        self._transition(task, "queued", reason, attempt=task.attempt + 1)
+    def retry(self, task: Task, reason: str | None = None,
+              feedback: str | None = None) -> None:
+        """Requeue for the next attempt, keeping the failure as feedback."""
+        text = feedback or reason
+        self._transition(task, "queued", reason, attempt=task.attempt + 1,
+                         last_failure=text[-MAX_FEEDBACK_CHARS:] if text else None)
 
     def defer(self, task: Task, reason: str | None = None) -> None:
         self._transition(task, "queued", reason,
@@ -138,4 +149,5 @@ def _task_from_row(row: tuple[Any, ...]) -> Task:
         id=row[0], project=row[1], task_type=row[2], risk_level=row[3],
         envelope=json.loads(row[4]), allowed_paths=json.loads(row[5]), repo=row[6],
         attempt=row[7], max_attempts=row[8],
-        requires_owner_approval=bool(row[9]), approved=bool(row[10]))
+        requires_owner_approval=bool(row[9]), approved=bool(row[10]),
+        last_failure=row[11])

@@ -109,6 +109,61 @@ class TaskQueueTests(unittest.TestCase):
         again = self.queue.claim_next(900)
         self.assertEqual(again.attempt, 2)
 
+    def test_first_attempt_has_no_previous_failure(self):
+        self.queue.enqueue(make_task())
+        self.assertIsNone(self.queue.claim_next(900).last_failure)
+
+    def test_retry_hands_the_feedback_to_the_next_attempt(self):
+        self.queue.enqueue(make_task())
+        self.queue.retry(self.queue.claim_next(900), "tests_failed: exit 1",
+                         "AssertionError: 2 != 3")
+        again = self.queue.claim_next(900)
+        self.assertEqual(again.attempt, 2)
+        self.assertEqual(again.last_failure, "AssertionError: 2 != 3")
+
+    def test_retry_without_feedback_falls_back_to_the_reason(self):
+        self.queue.enqueue(make_task())
+        self.queue.retry(self.queue.claim_next(900), "tests_failed: exit 1")
+        self.assertEqual(self.queue.claim_next(900).last_failure,
+                         "tests_failed: exit 1")
+
+    def test_feedback_is_bounded(self):
+        self.queue.enqueue(make_task())
+        self.queue.retry(self.queue.claim_next(900), "r", "x" * 10_000)
+        self.assertLessEqual(len(self.queue.claim_next(900).last_failure), 2000)
+
+    def test_deferral_keeps_the_previous_failure(self):
+        queue = TaskQueue(self.path.with_name("f.sqlite3"), clock=self.clock,
+                          defer_seconds=60)
+        self.addCleanup(queue.close)
+        queue.enqueue(make_task())
+        queue.retry(queue.claim_next(900), "r", "AssertionError")
+        queue.defer(queue.claim_next(900), "budget")
+        self.clock.advance(61)
+        self.assertEqual(queue.claim_next(900).last_failure, "AssertionError")
+
+    def test_database_created_before_the_column_existed_still_works(self):
+        import sqlite3
+
+        old = Path(self._tmp.name) / "old.sqlite3"
+        db = sqlite3.connect(str(old))
+        db.executescript(
+            "CREATE TABLE tasks (id TEXT PRIMARY KEY, project TEXT NOT NULL, "
+            "task_type TEXT NOT NULL, risk_level TEXT NOT NULL, "
+            "envelope TEXT NOT NULL, allowed_paths TEXT NOT NULL, "
+            "repo TEXT NOT NULL, attempt INTEGER NOT NULL, "
+            "max_attempts INTEGER NOT NULL, "
+            "requires_owner_approval INTEGER NOT NULL, approved INTEGER NOT NULL, "
+            "status TEXT NOT NULL, reason TEXT, lease_expires REAL, "
+            "not_before REAL NOT NULL, created_at REAL NOT NULL, "
+            "updated_at REAL NOT NULL);")
+        db.close()
+        queue = TaskQueue(old, clock=self.clock)
+        self.addCleanup(queue.close)
+        queue.enqueue(make_task())
+        queue.retry(queue.claim_next(900), "r", "feedback")
+        self.assertEqual(queue.claim_next(900).last_failure, "feedback")
+
     def test_defer_hides_the_task_until_the_delay_passes(self):
         queue = TaskQueue(self.path.with_name("d.sqlite3"), clock=self.clock,
                           defer_seconds=600)
